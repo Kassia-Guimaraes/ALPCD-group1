@@ -1,4 +1,4 @@
-# ALPCD-VSK
+# [ALPCD] Group 1
 
 ## Componentes do Grupo
 
