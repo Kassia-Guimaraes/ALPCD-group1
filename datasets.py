@@ -12,7 +12,7 @@ def request_data(header, path, limit, page):  # faz o import dos dados da págin
 
     response = requests.request("GET", url, headers=headers, data=payload)
 
-    if response.status_code == 200:
+    if (response.status_code == 200) and (response.headers["Content-Type"] == "application/json"): #redução de erros
         res = response.json()
         return res
 
@@ -21,7 +21,7 @@ def request_data(header, path, limit, page):  # faz o import dos dados da págin
         return None
 
 
-def import_data(header, path, limit, total_data):
+def import_data(header, path, limit, total_data): #retorna uma lista com todos os resultados
 
     # sabe quantas páginas são necessárias para chegar no total de dados
     last_page = int(total_data/limit)+1
@@ -34,7 +34,7 @@ def import_data(header, path, limit, total_data):
             data = request_data(header, path, rest, i)['results']
             results += data  # adiciona os dados obtidos
 
-            return results
+            return results 
 
         # vai buscar à página web os dados
         data = request_data(header, path, limit, i)['results']
