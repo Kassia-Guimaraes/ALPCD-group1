@@ -10,16 +10,19 @@ def request_data(header, path, limit, page):  # faz o import dos dados da págin
     headers = {'User-agent': 'group1-ALPCD'}
     payload = {}
 
-    response = requests.request("GET", url, headers=headers, data=payload)
+    try:
+        response = requests.get(url, headers=headers)
 
-    if (response.status_code == 200) and (response.headers["Content-Type"] == "application/json"): #redução de erros
-        res = response.json()
-        return res
-
-    else:
-        print(f"Erro {response.status_code}- {response.text}")
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Erro {response.status_code} - {response.text}")
+            return None
+    except requests.exceptions.RequestException as e:
+        print(f"Erro na requisição: {e}")
         return None
-
+    
+    
 
 def import_data(header, path, limit, total_data): #retorna uma lista com todos os resultados
 
