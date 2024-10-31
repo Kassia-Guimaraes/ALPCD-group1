@@ -11,7 +11,7 @@ def request_data(header, path, limit, page):  # faz o import dos dados da págin
     payload = {}
 
     try:
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers= headers)
 
         if response.status_code == 200:
             return response.json()
