@@ -22,7 +22,7 @@ def salary(job_id: int):
     try:
         #total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem 
 
-        data_list = import_data('https://api.itjobs.pt/', path='job/search.json', limit=1, total_data=5) # lista com todos os resultados da página
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=5) # lista com todos os resultados da página
 
         if data_list is None: # se data_list é None, imprime uma mensagem e encerra a função
             print("Erro: Nenhum dado retornado.")
