@@ -64,10 +64,9 @@ def export_csv(name, dict):
         writer.writeheader()  # escrever o cabeçalho
 
         # percorrer o dicionário por linha
-        for title, company, description, date, salary, local in dict.items():
+        #for title, company, description, date, salary, local in dict.items():
 
             # escrever o dicionário
-            writer.writerow({"Título": str(title), "Empresa": str(company), "Descrição": str(
-                description), "Data de Publicação": str(date), "Salário": salary, "Localização": str(local)})
+        writer.writerow(dict)
 
     print("Arquivo CSV criado com sucesso!")
