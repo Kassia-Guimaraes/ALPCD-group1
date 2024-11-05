@@ -1,5 +1,3 @@
-from pyparsing import dict_of
-from top_secret import secret
 from datasets import import_data, export_csv, request_data
 import requests
 import typer
@@ -21,33 +19,42 @@ def search():
 
 @app.command()
 def salary(job_id: int):
+
+    search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*'] #palavras que geralmente aparecem juntamente com o salário
+
     try:
         #total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem 
 
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=5) # lista com todos os resultados da página
-
-        if data_list is None: # se data_list é None, imprime uma mensagem e encerra a função
-            print("Erro: Nenhum dado retornado.")
-            return 'Nenhum dado retornado'
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=100) # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
-
-            # Verifica se 'id' e 'wage' estão no dicionário
-            if ('id' in data) and ('wage' in data) and (data['id'] == job_id):
-                print('data[id]:', data['id'])
-                print('wage:', data['wage'])
+            
+            try: # testa com o job_id dado pelo utilizador
                 
-                # Verifica se 'wage' tem valor
-                if data['wage']:
+                if data.get('wage', ''): #se 'wage' diferente de NULL
+                    print(data.get('wage', ''))
+                    return data.get('wage', '')
+        
 
-                    print("Wage:", data['wage'])
+                for expression in search_salary:
+                    pattern = fr'[^.<>!?]*?\b{expression}[s|S]al[á|a]r(?:io|ial|iais|y)*\b[^.<>]*?[.<]' #condição para início e fim das frases
+                    regex = re.compile(pattern)
 
-                return data['wage']
-
-        # Caso não encontre o job_id
-        print('JobID não encontrado.')
-        return 'JobID não encontrado'
+                    # Pesquisa a primeira frase no texto que corresponde ao padrão
+                    match = regex.search(data.get('body',''))
+                    if match:
+                        print(match.group(0),'\n\n')
+                        return match.group(0)
+                
+                print('Nenhum dado sobre salário encontrado')
+                return 'Nenhum dado sobre salário encontrado'
+                    
+                
+            except:
+                # Caso não encontre o job_id
+                print('JobID não encontrado.')
+                return 'JobID não encontrado'  
 
     except Exception as e:
         print(f'Erro: {e}')
