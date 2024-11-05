@@ -1,6 +1,5 @@
-from pyparsing import dict_of
-from top_secret import secret
 from datasets import import_data, export_csv, request_data
+from datetime import datetime
 import requests
 import typer
 import re
@@ -58,17 +57,61 @@ def salary(job_id: int):
 
 @app.command()
 def skills(skills: list[str], start_date: str, end_date: str):
+    print(skills)
+    list_skills = [
+        # Linguagens de Programação
+        "Python", "Java", "JavaScript", "C#", "Ruby", "PHP",
+        "Swift", "Go", "Kotlin", "Rust", "TypeScript", "Scala",
+        "Perl", "C", "C++", "Dart",
 
-    # Tratamento dos dados das skills
+        # Desenvolvimento Web
+        "HTML", "CSS", "React", "Angular", "Vue.js", "Bootstrap",
+        "Node.js", "Express", "jQuery", "Sass", "Less",
+
+        # Desenvolvimento de Aplicativos
+        "Flutter", "React Native", "Ionic", "Xamarin",
+
+        # Banco de Dados
+        "SQL", "NoSQL", "MongoDB", "PostgreSQL", "MySQL",
+        "SQLite", "OracleDB", "Redis", "Firebase",
+
+        # DevOps e Infraestrutura
+        "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud",
+        "Terraform", "Ansible", "Jenkins", "Git", "CI/CD",
+
+        # Ciência de Dados e Machine Learning
+        "Machine Learning", "Data Science", "TensorFlow",
+        "PyTorch", "Pandas", "NumPy", "R", "Matplotlib",
+        "Scikit-learn", "Keras", "Statistics",
+
+        # Metodologias e Ferramentas
+        "Agile", "Scrum", "Kanban", "DevOps", "GitHub", "Bitbucket",
+        "Jira", "Trello", "Confluence",
+
+        # Segurança da Informação
+        "Cybersecurity", "Penetration Testing", "Ethical Hacking",
+        "Network Security", "Information Security",
+
+        # Outras Skills Relevantes
+        "Blockchain", "IoT", "AR/VR", "UI/UX Design", "SEO",
+        "Digital Marketing", "Project Management", "Business Analysis",
+        "Technical Writing", "API Development", "GraphQL",
+
+        # Soft Skills
+        "Communication", "Comunicação", "Trabalho em Equipa", "Teamwork", "Problem Solving",
+        "Critical Thinking", "Adaptability", "Leadership"
+    ]
+
+    # Tratamento das skills
     skills = str(skills)
     skills = re.findall(r"[A-Za-z0-9]+", skills)
 
     # Tratamento das datas
-    start_day, start_month = processing_data(start_date)
-    end_day, end_month = processing_data(end_date)
+    start_date = processing_data(start_date)
+    end_date = processing_data(end_date)
 
     # Verifica se as datas são válidas
-    if start_day is None or end_day is None:
+    if start_date is None or end_date is None:
         return print("Data inválida!!")
 
     res = request_data('https://api.itjobs.pt/', 'job/list.json', 1, 1)
@@ -77,28 +120,42 @@ def skills(skills: list[str], start_date: str, end_date: str):
     datasets = import_data('https://api.itjobs.pt/',
                            'job/list.json', 100, int(total_data))
 
-    list_company = []
+    list_jobs = []
 
     for data in datasets:
         body = data["body"]
-        print(data)
+        update_date = data["updatedAt"]
+        if update_date is None:
+            update_date = data["publishedAt"]
 
-    all_skills_found = True
-    for skill in skills:
-        if not re.search(rf"\b{skill}\b", body, re.IGNORECASE):
-            all_skills_found = False
-            break
+        update_date = re.sub(
+            r"(\d{4}-\d{2}-\d{2})( \d{2}:\d{2}:\d{2})", r"\1", update_date)
 
-    if all_skills_found:
-        company_name = data["company"]["name"]
-        list_company.append((company_name))
+        update_date = datetime.strptime(update_date, "%Y-%m-%d")
 
-    dict_companies = {"Empresas": list_company}
+        # Verifica se a data de publicação está no intervalo
+        if start_date <= update_date <= end_date:
 
-    if not dict_companies["Empresas"]:
+            all_skills_found = True
+            print(skills)
+            for skill in skills:
+                if not re.search(rf"\b{skill}\b", body, re.IGNORECASE):
+                    all_skills_found = False
+                    break
+
+            if all_skills_found:
+                job_info = {
+                    "Título": data["title"],
+                    "Empresa": data["company"]["name"],
+                    "Id_job": data["id"],
+                    "Data de Publicação": update_date.strftime("%Y-%m-%d"),
+                }
+                list_jobs.append(job_info)
+
+    if not list_jobs:
         print("Nenhuma empresa encontrada que requer a skill.")
     else:
-        print(dict_companies)
+        print(list_jobs)
 
 
 def processing_data(date):
@@ -114,9 +171,8 @@ def processing_data(date):
         date = re.split(r"[-:/ ]", date)
         # Extrai os grupos correspondentes
         day, month, year = date
-        # Criação de data em formato universal
-        # date_universal = f"{year}-{month}-{day}"
-        return day, month
+
+        return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
 
     else:
         match2 = re.match(
@@ -130,11 +186,10 @@ def processing_data(date):
             date = re.split(r"[-:/ ]", date)
             # Extrai os grupos correspondentes
             year, month, day = date
-            # Criação de data em formato universal
-            # date_universal = f"{year}-{month}-{day}"
-            return day, month
+
+            return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
         else:
-            return None, None
+            return None
 
 
 if __name__ == "__main__":
