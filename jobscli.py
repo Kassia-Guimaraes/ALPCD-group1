@@ -32,22 +32,27 @@ def salary(job_id: int):
             if data.get('id','') == job_id: # testa com o job_id dado pelo utilizador
                 
                 if data.get('wage', ''): #se 'wage' diferente de NULL
-                    print(data.get('wage', ''))
+                    print('€',data.get('wage', ''))
                     return data.get('wage', '')
         
 
                 for expression in search_salary:
                     
-                    match = re.search(fr'[^.<>!?;]*?\b{expression}[s|S]al[á|a]r(?:io|ial|iais|y)*\b[^.<>]*?(?=[.<;!?])',data.get('body','')) #pesquisa a primeira frase no texto que corresponde ao padrão
+                    match = re.search(fr'[^.<>!?;^|]*?\b{expression}[s|S]al[á|a]r[io|ial|iais|y]*\b[^.<>]*?(?=[.<;:!?^|])',data.get('body','')) #pesquisa a primeira frase no texto que corresponde ao padrão
 
                     if match:
-                        print(match.group(0),'\n')
+                        print(match.group(0))
                         return match.group(0)
+                    
+                    match = re.search(fr'[^.<>!?;^|]*?\b[rR]emunera[çct][ion|ions|õe|ão][s]**\b[^.<>]*?(?=[.<;:!?^|])',data.get('body',''))
+                    if match:
+                        print(match.group(0))
+
                 
                 print('Nenhum dado sobre salário encontrado')
                 return 'Nenhum dado sobre salário encontrado'
                     
-        print('JobID não encontrado.') #caso passe todo o ciclo e não encontre o job_id 
+        print('JobID não encontrado, por favor verifique se o código da vaga está correto.') #caso passe todo o ciclo e não encontre o job_id 
         return 'JobID não encontrado'  
 
     except Exception as e:
