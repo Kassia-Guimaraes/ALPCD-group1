@@ -23,8 +23,7 @@ def salary(job_id: int):
     search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*'] #palavras que geralmente aparecem juntamente com o salário
 
     try:
-        #total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem 
-
+        # total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
         data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=100) # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
@@ -62,10 +61,21 @@ def salary(job_id: int):
 
 
 @app.command()
-def skills(skills: list[str]):
-    skills = [skill.strip("[]") for skill in skills]
-    res = request_data('https://api.itjobs.pt/',
-                       'job/list.json', 1, 1)
+def skills(skills: list[str], start_date: str, end_date: str):
+
+    # Tratamento dos dados das skills
+    skills = str(skills)
+    skills = re.findall(r"[A-Za-z0-9]+", skills)
+
+    # Tratamento das datas
+    start_day, start_month = processing_data(start_date)
+    end_day, end_month = processing_data(end_date)
+
+    # Verifica se as datas são válidas
+    if start_day is None or end_day is None:
+        return print("Data inválida!!")
+
+    res = request_data('https://api.itjobs.pt/', 'job/list.json', 1, 1)
     total_data = res["total"]
 
     datasets = import_data('https://api.itjobs.pt/',
@@ -75,19 +85,17 @@ def skills(skills: list[str]):
 
     for data in datasets:
         body = data["body"]
-        # print(data)
+        print(data)
 
-        all_skills_found = True
-        for skill in skills:
-            pattern = rf"\b{skill}\b"
+    all_skills_found = True
+    for skill in skills:
+        if not re.search(rf"\b{skill}\b", body, re.IGNORECASE):
+            all_skills_found = False
+            break
 
-            if not re.search(pattern, body, re.IGNORECASE):
-                all_skills_found = False
-                break
-
-        if all_skills_found:
-            company_name = data["company"]["name"]
-            list_company.append((company_name))
+    if all_skills_found:
+        company_name = data["company"]["name"]
+        list_company.append((company_name))
 
     dict_companies = {"Empresas": list_company}
 
@@ -95,6 +103,42 @@ def skills(skills: list[str]):
         print("Nenhuma empresa encontrada que requer a skill.")
     else:
         print(dict_companies)
+
+
+def processing_data(date):
+
+    match = re.match(
+        r"((0[1-9]|[12][0-9]|3[01])[-:/ ](0[13578]|1[02])[-:/ ]2024)|"
+
+        r"((0[1-9]|[12][0-9]|30)[-:/ ](0[469]|11)[-:/ ]2024)|"
+
+        r"((0[1-9]|[12][0-9])[-:/ ](02)[-:/ ]2024)", date)
+
+    if match:
+        date = re.split(r"[-:/ ]", date)
+        # Extrai os grupos correspondentes
+        day, month, year = date
+        # Criação de data em formato universal
+        # date_universal = f"{year}-{month}-{day}"
+        return day, month
+
+    else:
+        match2 = re.match(
+            r"(2024[-:/ ](0[13578]|1[02])[-:/ ](0[1-9]|[12][0-9]|3[01]))|"
+
+            r"(2024[-:/ ](0[469]|11)[-:/ ](0[1-9]|[12][0-9]|30))|"
+
+            r"(2024[-:/ ](02)[-:/ ](0[1-9]|[12][0-9]))", date)
+
+        if match2:
+            date = re.split(r"[-:/ ]", date)
+            # Extrai os grupos correspondentes
+            year, month, day = date
+            # Criação de data em formato universal
+            # date_universal = f"{year}-{month}-{day}"
+            return day, month
+        else:
+            return None, None
 
 
 if __name__ == "__main__":
