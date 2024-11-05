@@ -24,12 +24,12 @@ def salary(job_id: int):
 
     try:
         # total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=100) # lista com todos os resultados da página
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=500) # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
             
-            try: # testa com o job_id dado pelo utilizador
+            if data.get('id','') == job_id: # testa com o job_id dado pelo utilizador
                 
                 if data.get('wage', ''): #se 'wage' diferente de NULL
                     print(data.get('wage', ''))
@@ -37,23 +37,18 @@ def salary(job_id: int):
         
 
                 for expression in search_salary:
-                    pattern = fr'[^.<>!?]*?\b{expression}[s|S]al[á|a]r(?:io|ial|iais|y)*\b[^.<>]*?[.<]' #condição para início e fim das frases
-                    regex = re.compile(pattern)
+                    
+                    match = re.search(fr'[^.<>!?;]*?\b{expression}[s|S]al[á|a]r(?:io|ial|iais|y)*\b[^.<>]*?(?=[.<;!?])',data.get('body','')) #pesquisa a primeira frase no texto que corresponde ao padrão
 
-                    # Pesquisa a primeira frase no texto que corresponde ao padrão
-                    match = regex.search(data.get('body',''))
                     if match:
-                        print(match.group(0),'\n\n')
+                        print(match.group(0),'\n')
                         return match.group(0)
                 
                 print('Nenhum dado sobre salário encontrado')
                 return 'Nenhum dado sobre salário encontrado'
                     
-                
-            except:
-                # Caso não encontre o job_id
-                print('JobID não encontrado.')
-                return 'JobID não encontrado'  
+        print('JobID não encontrado.') #caso passe todo o ciclo e não encontre o job_id 
+        return 'JobID não encontrado'  
 
     except Exception as e:
         print(f'Erro: {e}')
