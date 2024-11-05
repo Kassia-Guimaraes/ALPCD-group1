@@ -63,7 +63,7 @@ def salary(job_id: int):
 
 @app.command()
 def skills(skills: list[str], start_date: str, end_date: str):
-    print(skills)
+    # Lista de skills possiveis
     list_skills = [
         # Linguagens de Programação
         "Python", "Java", "JavaScript", "C#", "Ruby", "PHP",
@@ -82,11 +82,11 @@ def skills(skills: list[str], start_date: str, end_date: str):
         "SQLite", "OracleDB", "Redis", "Firebase",
 
         # DevOps e Infraestrutura
-        "Docker", "Kubernetes", "AWS", "Azure", "Google Cloud",
+        "Docker", "Kubernetes", "AWS", "Azure",
         "Terraform", "Ansible", "Jenkins", "Git", "CI/CD",
 
         # Ciência de Dados e Machine Learning
-        "Machine Learning", "Data Science", "TensorFlow",
+        "Data", "Science", "TensorFlow",
         "PyTorch", "Pandas", "NumPy", "R", "Matplotlib",
         "Scikit-learn", "Keras", "Statistics",
 
@@ -95,37 +95,40 @@ def skills(skills: list[str], start_date: str, end_date: str):
         "Jira", "Trello", "Confluence",
 
         # Segurança da Informação
-        "Cybersecurity", "Penetration Testing", "Ethical Hacking",
-        "Network Security", "Information Security",
+        "Cybersecurity",
 
         # Outras Skills Relevantes
-        "Blockchain", "IoT", "AR/VR", "UI/UX Design", "SEO",
-        "Digital Marketing", "Project Management", "Business Analysis",
-        "Technical Writing", "API Development", "GraphQL",
+        "Blockchain", "IoT", "AR/VR", "UI/UX", "SEO",
+        "API", "Development", "GraphQL",
 
         # Soft Skills
-        "Communication", "Comunicação", "Trabalho em Equipa", "Teamwork", "Problem Solving",
-        "Critical Thinking", "Adaptability", "Leadership"
+        "Communication", "Comunicação", "Teamwork",
+        "Adaptability", "Leadership"
     ]
 
     # Tratamento das skills
     skills = str(skills)
     skills = re.findall(r"[A-Za-z0-9]+", skills)
 
+    for skill in skills:
+        if skill not in list_skills:
+            return print(f"{skill} não é compatível com uma skill!")
+
     # Tratamento das datas
-    start_date = processing_data(start_date)
-    end_date = processing_data(end_date)
+    start_date, end_date = map(processing_data, (start_date, end_date))
 
     # Verifica se as datas são válidas
     if start_date is None or end_date is None:
         return print("Data inválida!!")
 
+    # Requisição dos dados
     res = request_data('https://api.itjobs.pt/', 'job/list.json', 1, 1)
     total_data = res["total"]
 
     datasets = import_data('https://api.itjobs.pt/',
                            'job/list.json', 100, int(total_data))
 
+    # Inicialização do processo de captura das empresas que requerem as skills naquele período
     list_jobs = []
 
     for data in datasets:
@@ -142,21 +145,29 @@ def skills(skills: list[str], start_date: str, end_date: str):
         # Verifica se a data de publicação está no intervalo
         if start_date <= update_date <= end_date:
 
+            # Verifica se todas as skills estão presentes no body do job
             all_skills_found = True
-            print(skills)
             for skill in skills:
                 if not re.search(rf"\b{skill}\b", body, re.IGNORECASE):
                     all_skills_found = False
                     break
 
             if all_skills_found:
-                job_info = {
-                    "Título": data["title"],
-                    "Empresa": data["company"]["name"],
-                    "Id_job": data["id"],
-                    "Data de Publicação": update_date.strftime("%Y-%m-%d"),
-                }
-                list_jobs.append(job_info)
+                empresa = data["company"]["name"]
+                id_job = data["id"]
+
+                # Verifica se a empresa já existe na lista
+                for job in list_jobs:
+                    if job["Empresa"] == empresa:
+                        job["Id_job"].append(id_job)
+                        break
+                # Se não existir adiciona o dicionario respetivo daquela empresa
+                else:
+                    job_info = {
+                        "Empresa": empresa,
+                        "Id_job": [id_job],
+                    }
+                    list_jobs.append(job_info)
 
     if not list_jobs:
         print("Nenhuma empresa encontrada que requer a skill.")
