@@ -1,21 +1,75 @@
 from datasets import import_data, export_csv, request_data
 from datetime import datetime
+from typing import List
 import requests
 import typer
 import re
-
+import json
 
 app = typer.Typer()
 
-
 @app.command(help='Encontrar as publicações de emprego mais recentes')
-def top():
-    return
+def top(n: int = typer.Argument('número de vagas')):
+    
+    #Lista os N trabalhos mais recentes publicados pela itjobs.pt
+    
+    try:
+        datasets = import_data("https://api.itjobs.pt/", "job/list.json", 100, n)
+        
+        jobs = []
+        for vaga in datasets:
+            DictVagas = {
+                "Título": vaga.get("title"),
+                "Empresa": vaga.get("company", {}).get("name"),
+                "Descrição": vaga.get("body")[:150] + '...' if vaga.get("body") else "Não disponível",
+                "Data de Publicação": vaga.get("publishedAt"),
+                "Salário": vaga.get("wage") if vaga.get("wage") else "Não informado",
+                "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
+            }
+            jobs.append(DictVagas)
+        
+        for vaga in jobs:
+            print(f"Título: {vaga['Título']}")
+            print(f"Empresa: {vaga['Empresa']}")
+            print(f"Descrição: {vaga['Descrição']}")
+            print(f"Data de Publicação: {vaga['Data de Publicação']}")
+            print(f"Salário: {vaga['Salário']}")
+            print(f"Localização: {vaga['Localização']}\n")
+            print("-" * 80)
+            
+        # Retornando as vagas formatadas como dicionário
+        return jobs
+        
+    except Exception as e:
+        print(f"Erro: {e}")
 
-
+       
 @app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, numa determinada localidade')
-def search():
-    return
+def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
+    """
+    Lista os N trabalhos do tipo full-time publicados por uma determinada empresa em uma determinada localidade.
+    """
+    try:
+        datasets = import_data("https://api.itjobs.pt/", "job/list.json", 100, n)
+        
+        # Lista para armazenar os trabalhos que correspondem aos critérios
+        trabalhos_filtrados = []
+        
+        for vaga in datasets:
+            # Verificando se a vaga é full-time, da empresa e localidade especificadas
+            if vaga.get("company", {}).get("name") == company_name:
+                if any(re.search(location, loc["name"], re.IGNORECASE) for loc in vaga.get("locations", [])):
+                    if "full-time" in [tipo.get("name").lower() for tipo in vaga.get("types", [])]:
+                        trabalhos_filtrados.append(vaga)
+        
+        # Limitando ao número de trabalhos a mostrar
+        trabalhos_filtrados = trabalhos_filtrados[:n]
+        
+        # Imprimindo o resultado em formato JSON
+        print(json.dumps(trabalhos_filtrados, indent=4, ensure_ascii=False))
+        
+    except Exception as e:
+        print(f"Erro: {e}")
 
 
 @app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
@@ -88,40 +142,44 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
 @app.command(help="Pesquisar salário de uma vaga de emprego específica")
 def salary(job_id: int = typer.Argument('Número inteiro',help='ID da vaga para pesquisa de salários.')):
 
-    search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*'] #palavras que geralmente aparecem juntamente com o salário
+    # palavras que geralmente aparecem juntamente com o salário
+    search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*']
 
     try:
+
         total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
         data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=total_data) # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
-            
-            if data.get('id','') == job_id: # testa com o job_id dado pelo utilizador
-                
-                if data.get('wage', ''): #se 'wage' diferente de NULL
-                    print('€',data.get('wage', ''))
+
+            if data.get('id', '') == job_id:  # testa com o job_id dado pelo utilizador
+
+                if data.get('wage', ''):  # se 'wage' diferente de NULL
+                    print('€', data.get('wage', ''))
                     return data.get('wage', '')
-        
 
                 for expression in search_salary:
-                    
-                    match = re.search(fr'[^.<>!?;^|]*?\b{expression}[s|S]al[á|a]r[io|ial|iais|y]*\b[^.<>]*?(?=[.<;:!?^|])',data.get('body','')) #pesquisa a primeira frase no texto que corresponde ao padrão
+
+                    # pesquisa a primeira frase no texto que corresponde ao padrão
+                    match = re.search(
+                        fr'[^.<>!?;^|]*?\b{expression}[s|S]al[á|a]r[io|ial|iais|y]*\b[^.<>]*?(?=[.<;:!?^|])', data.get('body', ''))
 
                     if match:
                         print(match.group(0))
                         return match.group(0)
-                    
-                    match = re.search(fr'[^.<>!?;^|]*?\b[rR]emunera[çct][ion|ions|õe|ão][s]**\b[^.<>]*?(?=[.<;:!?^|])',data.get('body',''))
+
+                    match = re.search(
+                        fr'[^.<>!?;^|]*?\b[rR]emunera[çct][ion|ions|õe|ão][s]**\b[^.<>]*?(?=[.<;:!?^|])', data.get('body', ''))
                     if match:
                         print(match.group(0))
 
-                
                 print('Nenhum dado sobre salário encontrado')
                 return 'Nenhum dado sobre salário encontrado'
-                    
-        print('JobID não encontrado, por favor verifique se o código da vaga está correto.') #caso passe todo o ciclo e não encontre o job_id 
-        return 'JobID não encontrado'  
+
+        # caso passe todo o ciclo e não encontre o job_id
+        print('JobID não encontrado, por favor verifique se o código da vaga está correto.')
+        return 'JobID não encontrado'
 
     except Exception as e:
         print(f'Erro: {e}')
@@ -174,8 +232,8 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
     ]
 
     # Tratamento das skills
-    skills = str(skills)
-    skills = re.findall(r"[A-Za-z0-9]+", skills)
+    # skills = processing_skills(skills)
+    print(skills)
 
     for skill in skills:
         if skill not in list_skills:
@@ -274,6 +332,20 @@ def processing_data(date):
             return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
         else:
             return None
+
+
+@app.command()
+def teste(skills: str):
+    print(skills)
+    skills = re.split(r',', str(skills))
+
+    print(skills)
+    skills_tratadas = []
+
+    for skill in skills:
+        skills_tratadas.append(" ".join(re.findall(r'\b\w+\b', skill)))
+
+    print(skills_tratadas)
 
 
 if __name__ == "__main__":
