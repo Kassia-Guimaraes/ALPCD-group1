@@ -19,13 +19,45 @@ def search():
 
 
 @app.command()
+def company(company_name:str):
+
+    try:
+        total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=10) # lista com todos os resultados da página
+
+        jobs = []
+
+        for data in data_list:
+
+            try: #se a pessoa adicionar o id da empresa
+                if (data.get('companyId','') == int(company_name)):
+                    jobs.append(data.get('title',''))
+
+            except:
+                match = re.search(fr'\b{company_name}\b', data['company']['name'], re.IGNORECASE) #faz a busca sem considerar as letras maiúsculas e/ou minúsculas
+                
+                if match: #se encontrar o nome da companhia
+                    jobs.append(data.get('title', ''))
+        
+        if jobs:
+            print(jobs)
+            return jobs
+        
+        print(f'Nenhuma vaga encontrada da empresa {company_name}')
+    
+
+    except Exception as e:
+        print(f'Erro: {e}')
+        return e
+
+@app.command()
 def salary(job_id: int):
 
     search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*'] #palavras que geralmente aparecem juntamente com o salário
 
     try:
-        # total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=500) # lista com todos os resultados da página
+        total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=total_data) # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
