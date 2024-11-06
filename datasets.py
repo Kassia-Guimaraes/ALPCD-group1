@@ -21,10 +21,10 @@ def request_data(header, path, limit, page):  # faz o import dos dados da págin
     except requests.exceptions.RequestException as e:
         print(f"Erro na requisição: {e}")
         return None
-    
-    
 
-def import_data(header, path, limit, total_data): #retorna uma lista com todos os resultados
+
+# retorna uma lista com todos os resultados
+def import_data(header, path, limit, total_data):
 
     # sabe quantas páginas são necessárias para chegar no total de dados
     last_page = int(total_data/limit)+1
@@ -37,19 +37,13 @@ def import_data(header, path, limit, total_data): #retorna uma lista com todos o
             data = request_data(header, path, rest, i)['results']
             results += data  # adiciona os dados obtidos
 
-            return results 
+            return results
 
         # vai buscar à página web os dados
         data = request_data(header, path, limit, i)['results']
         results += data
 
         rest -= limit  # retira a quantidade do limite das páginas importadas
-
-
-# teste = request_data('https://api.itjobs.pt/', 'job/list.json', limit=10, page=1)
-# teste = import_data('https://api.itjobs.pt/','job/list.json', limit=100, total_data=10)
-
-# print(teste, '\n\n', len(teste))
 
 
 def export_csv(name, dict):
@@ -63,10 +57,7 @@ def export_csv(name, dict):
 
         writer.writeheader()  # escrever o cabeçalho
 
-        # percorrer o dicionário por linha
-        #for title, company, description, date, salary, local in dict.items():
-
-            # escrever o dicionário
-        writer.writerow(dict)
+        for dic in dict:
+            writer.writerow(dic)
 
     print("Arquivo CSV criado com sucesso!")
