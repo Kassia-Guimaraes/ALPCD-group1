@@ -8,8 +8,7 @@ import json
 
 app = typer.Typer()
 
-
-@app.command()
+@app.command(help='Encontrar as publicações de emprego mais recentes')
 def top(n: int):
     
     #Lista os N trabalhos mais recentes publicados pela itjobs.pt
@@ -45,7 +44,7 @@ def top(n: int):
         print(f"Erro: {e}")
 
        
-@app.command()
+@app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, numa determinada localidade')
 def search(location: str, company_name: str, n: int):
     """
     Lista os N trabalhos do tipo full-time publicados por uma determinada empresa em uma determinada localidade.
@@ -73,8 +72,8 @@ def search(location: str, company_name: str, n: int):
         print(f"Erro: {e}")
 
 
-@app.command()
-def company(company_name:str):
+@app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
+def company(company_name:str = typer.Argument('ID ou nome',help='Nome ou ID da empresa')):
 
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json', limit=1, page=1)['total'] # num dados que existem
@@ -105,8 +104,8 @@ def company(company_name:str):
         print(f'Erro: {e}')
         return e
     
-@app.command()
-def locality(district:str):
+@app.command(help='Buscar todas as vagas disponíveis por distrito')
+def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID da localidade que deseja pesquisar a vaga')):
 
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json', limit=1, page=1)['total'] # num dados que existem
@@ -132,7 +131,7 @@ def locality(district:str):
             print(jobs)
             return jobs
         
-        print(f'Nenhuma vaga encontrada da empresa {district}') #se a lista dos jobs estiver vazia
+        print(f'Nenhuma vaga encontrada em {district}') #se a lista dos jobs estiver vazia
         return jobs
 
     except Exception as e:
@@ -140,8 +139,8 @@ def locality(district:str):
         return e
 
 
-@app.command()
-def salary(job_id: int):
+@app.command(help="Pesquisar salário de uma vaga de emprego específica")
+def salary(job_id: int = typer.Argument('Número inteiro',help='ID da vaga para pesquisa de salários.')):
 
     # palavras que geralmente aparecem juntamente com o salário
     search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*']
@@ -187,8 +186,8 @@ def salary(job_id: int):
         return e
 
 
-@app.command()
-def skills(skills: list[str], start_date: str, end_date: str):
+@app.command(help='Mostrar quais os trabalhos que requerem uma determinada lista de skills, num determinado período de tempo')
+def skills(skills: list[str] = typer.Argument(help='Lista com as skills que deseja pesquisar'), start_date: str = typer.Argument('dd-mm-aaaa',help='Data inicial da pesquisa'), end_date: str = typer.Argument('dd-mm-aaaa',help='Data final da pesquisa')):
     # Lista de skills possiveis
     list_skills = [
         # Linguagens de Programação
