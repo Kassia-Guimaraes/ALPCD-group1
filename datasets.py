@@ -4,8 +4,8 @@ import csv
 
 
 def request_data(header, path, limit, page):  # faz o import dos dados da página web
-
-    url = f"{header}{path}?api_key={secret}&limit={limit}&page={page}"
+    key= "d4107ed4406401a0e25410cee5fb9564"
+    url = f"{header}{path}?api_key={key}&limit={limit}&page={page}"
 
     headers = {'User-agent': 'group1-ALPCD'}
     payload = {}
