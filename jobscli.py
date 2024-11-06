@@ -1,6 +1,6 @@
+from numpy import int32
 from datasets import import_data, export_csv, request_data
 from datetime import datetime
-from typing import List
 import requests
 import typer
 import re
@@ -11,12 +11,13 @@ app = typer.Typer()
 
 @app.command()
 def top(n: int):
-    
-    #Lista os N trabalhos mais recentes publicados pela itjobs.pt
-    
+
+    # Lista os N trabalhos mais recentes publicados pela itjobs.pt
+
     try:
-        datasets = import_data("https://api.itjobs.pt/", "job/list.json", 100, n)
-        
+        datasets = import_data("https://api.itjobs.pt/",
+                               "job/list.json", 100, n)
+
         jobs = []
         for vaga in datasets:
             DictVagas = {
@@ -28,7 +29,7 @@ def top(n: int):
                 "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
             }
             jobs.append(DictVagas)
-        
+
         for vaga in jobs:
             print(f"Título: {vaga['Título']}")
             print(f"Empresa: {vaga['Empresa']}")
@@ -37,20 +38,21 @@ def top(n: int):
             print(f"Salário: {vaga['Salário']}")
             print(f"Localização: {vaga['Localização']}\n")
             print("-" * 80)
-            
+
         # Retornando as vagas formatadas como dicionário
         return jobs
-        
+
     except Exception as e:
         print(f"Erro: {e}")
 
-        
+
 def fetch_jobs_from_api(header, path, limit, total_data):
-    response = requests.get(f"{header}{path}", params={"limit": limit, "total_data": total_data})
+    response = requests.get(f"{header}{path}", params={
+                            "limit": limit, "total_data": total_data})
     response.raise_for_status()  # Levanta uma exceção para códigos de status HTTP 4xx/5xx
     return response.json()
 
-        
+
 @app.command()
 def search(location: str, company_name: str, n: int):
     """
@@ -64,20 +66,21 @@ def search(location: str, company_name: str, n: int):
     header = "https://api.itjobs.pt/"
     path = "job/list.json"
 
-    jobs = import_data(header, path, limit= n, total_data= n)
-    
+    jobs = import_data(header, path, limit=n, total_data=n)
+
     if jobs is None:
         try:
             print("Tentando importar dados da API...")
-            jobs = fetch_jobs_from_api(header, path, limit= 1000, total_data= 1000)  # Obtém um número maior de trabalhos para filtrar
-            
-            
+            # Obtém um número maior de trabalhos para filtrar
+            jobs = fetch_jobs_from_api(
+                header, path, limit=1000, total_data=1000)
+
         except requests.exceptions.RequestException as e:
             print(f"Erro ao fazer a requisição: {e}.")
-            
+
         except json.JSONDecodeError as e:
             print(f"Erro ao decodificar JSON: {e}.")
-                
+
         except Exception as e:
             print(f"Ocorreu um erro inesperado: {e}.")
 
@@ -94,65 +97,78 @@ def search(location: str, company_name: str, n: int):
 
 
 @app.command()
-def company(company_name:str):
+def company(company_name: str):
 
     try:
-        total_data = request_data('https://api.itjobs.pt/', path='job/list.json', limit=1, page=1)['total'] # num dados que existem
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=10) # lista com todos os resultados da página
+        total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
+                                  # num dados que existem
+                                  limit=1, page=1)['total']
+        # lista com todos os resultados da página
+        data_list = import_data('https://api.itjobs.pt/',
+                                path='job/list.json', limit=100, total_data=10)
 
         jobs = []
 
         for data in data_list:
 
-            try: #se a pessoa adicionar o id da empresa
-                if (data.get('companyId','') == int(company_name)):
-                    jobs.append(data.get('title',''))
+            try:  # se a pessoa adicionar o id da empresa
+                if (data.get('companyId', '') == int(company_name)):
+                    jobs.append(data.get('title', ''))
 
             except:
-                match = re.search(fr'\b{company_name}\b', data['company']['name'], re.IGNORECASE) #faz a busca sem considerar as letras maiúsculas e/ou minúsculas
-                
-                if match: #se encontrar o nome da companhia
+                # faz a busca sem considerar as letras maiúsculas e/ou minúsculas
+                match = re.search(fr'\b{company_name}\b',
+                                  data['company']['name'], re.IGNORECASE)
+
+                if match:  # se encontrar o nome da companhia
                     jobs.append(data.get('title', ''))
-        
+
         if jobs:
             print(jobs)
             return jobs
-        
+
         print(f'Nenhuma vaga encontrada da empresa {company_name}')
-    
 
     except Exception as e:
         print(f'Erro: {e}')
         return e
-    
+
+
 @app.command()
-def locality(district:str):
+def locality(district: str):
 
     try:
-        total_data = request_data('https://api.itjobs.pt/', path='job/list.json', limit=1, page=1)['total'] # num dados que existem
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=10) # lista com todos os resultados da página
+        total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
+                                  # num dados que existem
+                                  limit=1, page=1)['total']
+        # lista com todos os resultados da página
+        data_list = import_data('https://api.itjobs.pt/',
+                                path='job/list.json', limit=100, total_data=10)
 
         jobs = []
 
         for data in data_list:
 
-            try: #se a pessoa adicionar o id da localidade
-                for local in data.get('locations',''):
+            try:  # se a pessoa adicionar o id da localidade
+                for local in data.get('locations', ''):
                     if (data['locations']['id'] == int(district)):
-                        jobs.append(data.get('title',''))
-
-            except: 
-                for local in data.get('locations',''):
-                    match = re.search(fr'\b{district}\b', local['name'], re.IGNORECASE) #faz a busca sem considerar as letras maiúsculas e/ou minúsculas
-
-                    if match: #se encontrar o nome da companhia
                         jobs.append(data.get('title', ''))
-        
+
+            except:
+                for local in data.get('locations', ''):
+                    # faz a busca sem considerar as letras maiúsculas e/ou minúsculas
+                    match = re.search(
+                        fr'\b{district}\b', local['name'], re.IGNORECASE)
+
+                    if match:  # se encontrar o nome da companhia
+                        jobs.append(data.get('title', ''))
+
         if jobs:
             print(jobs)
             return jobs
-        
-        print(f'Nenhuma vaga encontrada da empresa {district}') #se a lista dos jobs estiver vazia
+
+        # se a lista dos jobs estiver vazia
+        print(f'Nenhuma vaga encontrada da empresa {district}')
         return jobs
 
     except Exception as e:
@@ -168,8 +184,11 @@ def salary(job_id: int):
 
     try:
 
-        total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=total_data) # lista com todos os resultados da página
+        total_data = request_data('https://api.itjobs.pt/', path='job/search.json',
+                                  # num dados que existem
+                                  limit=1, page=1)['total']
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json',
+                                limit=100, total_data=total_data)  # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
@@ -212,52 +231,58 @@ def skills(skills: list[str], start_date: str, end_date: str):
     # Lista de skills possiveis
     list_skills = [
         # Linguagens de Programação
-        "Python", "Java", "JavaScript", "C#", "Ruby", "PHP",
-        "Swift", "Go", "Kotlin", "Rust", "TypeScript", "Scala",
-        "Perl", "C", "C++", "Dart",
+        "python", "java", "javascript", "c#", "ruby", "php",
+        "swift", "go", "kotlin", "rust", "typescript", "scala",
+        "perl", "c", "c++", "dart",
 
         # Desenvolvimento Web
-        "HTML", "CSS", "React", "Angular", "Vue.js", "Bootstrap",
-        "Node.js", "Express", "jQuery", "Sass", "Less",
+        "html", "css", "react", "angular", "vue.js", "bootstrap",
+        "node.js", "express", "jquery", "sass", "less",
 
         # Desenvolvimento de Aplicativos
-        "Flutter", "React Native", "Ionic", "Xamarin",
+        "flutter", "react native", "ionic", "xamarin",
 
         # Banco de Dados
-        "SQL", "NoSQL", "MongoDB", "PostgreSQL", "MySQL",
-        "SQLite", "OracleDB", "Redis", "Firebase",
+        "sql", "nosql", "mongodb", "postgresql", "mysql",
+        "sqlite", "oracledb", "redis", "firebase",
 
         # DevOps e Infraestrutura
-        "Docker", "Kubernetes", "AWS", "Azure",
-        "Terraform", "Ansible", "Jenkins", "Git", "CI/CD",
+        "docker", "kubernetes", "aws", "azure",
+        "terraform", "ansible", "jenkins", "git", "ci/cd",
 
         # Ciência de Dados e Machine Learning
-        "Data", "Science", "TensorFlow",
-        "PyTorch", "Pandas", "NumPy", "R", "Matplotlib",
-        "Scikit-learn", "Keras", "Statistics",
+        "data science", "tensorflow",
+        "pytorch", "pandas", "numpy", "r", "matplotlib",
+        "scikit-learn", "keras", "statistics", "ciência de dados",
+        "estatística",
 
         # Metodologias e Ferramentas
-        "Agile", "Scrum", "Kanban", "DevOps", "GitHub", "Bitbucket",
-        "Jira", "Trello", "Confluence",
+        "agile", "scrum", "kanban", "devops", "github", "bitbucket",
+        "jira", "trello", "confluence",
 
         # Segurança da Informação
-        "Cybersecurity",
+        "cybersecurity",
 
         # Outras Skills Relevantes
-        "Blockchain", "IoT", "AR/VR", "UI/UX", "SEO",
-        "API", "Development", "GraphQL",
+        "blockchain", "iot", "ar/vr", "ui/ux", "seo",
+        "api", "development", "graphql",
 
         # Soft Skills
-        "Communication", "Comunicação", "Teamwork",
-        "Adaptability", "Leadership"
+        "communication", "comunicação", "teamwork",
+        "adaptability", "leadership", "trabalho em equipa",
+
+        # Linguas
+        "inglês", "françes", "espanhol", "português",
+
+        # Licenciaturas
+        "engenharia informática", "ciência de dados"
     ]
 
     # Tratamento das skills
-    # skills = processing_skills(skills)
-    print(skills)
+    skills = re.split(r',', skills[0])
 
     for skill in skills:
-        if skill not in list_skills:
+        if skill.lower() not in list_skills:
             return print(f"{skill} não é compatível com uma skill!")
 
     # Tratamento das datas
@@ -276,6 +301,7 @@ def skills(skills: list[str], start_date: str, end_date: str):
 
     # Inicialização do processo de captura das empresas que requerem as skills naquele período
     list_jobs = []
+    csv_jobs = []
 
     for data in datasets:
         body = data["body"]
@@ -286,10 +312,10 @@ def skills(skills: list[str], start_date: str, end_date: str):
         update_date = re.sub(
             r"(\d{4}-\d{2}-\d{2})( \d{2}:\d{2}:\d{2})", r"\1", update_date)
 
-        update_date = datetime.strptime(update_date, "%Y-%m-%d")
+        update_datetime = datetime.strptime(update_date, "%Y-%m-%d")
 
         # Verifica se a data de publicação está no intervalo
-        if start_date <= update_date <= end_date:
+        if start_date <= update_datetime <= end_date:
 
             # Verifica se todas as skills estão presentes no body do job
             all_skills_found = True
@@ -299,21 +325,39 @@ def skills(skills: list[str], start_date: str, end_date: str):
                     break
 
             if all_skills_found:
-                empresa = data["company"]["name"]
+                company = data["company"]["name"]
                 id_job = data["id"]
 
                 # Verifica se a empresa já existe na lista
                 for job in list_jobs:
-                    if job["Empresa"] == empresa:
+                    if job["Empresa"] == company:
                         job["Id_job"].append(id_job)
                         break
                 # Se não existir adiciona o dicionario respetivo daquela empresa
                 else:
                     job_info = {
-                        "Empresa": empresa,
+                        "Empresa": company,
                         "Id_job": [id_job],
                     }
                     list_jobs.append(job_info)
+
+                # Tratamento da descrição (retirar paragrafos,etc)
+                description = re.sub(
+                    r"<[^>]+>|\n+|\r", "", data["company"]["description"])
+
+                # Dicionário para guardar em csv
+                csv_jobs_info = {
+                    "Título": data["title"],
+                    "Empresa": company,
+                    "Descrição": description,
+                    "Data de Publicação": update_date,
+                    # "Salário": salary(data["id"]),
+                    "Localização": data["locations"][0]["name"],
+                }
+                csv_jobs.append(csv_jobs_info)
+
+    # Exporta os resultados para um CSV
+    export_csv("jobs", csv_jobs)
 
     if not list_jobs:
         print("Nenhuma empresa encontrada que requer a skill.")
@@ -353,20 +397,6 @@ def processing_data(date):
             return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
         else:
             return None
-
-
-@app.command()
-def teste(skills: str):
-    print(skills)
-    skills = re.split(r',', str(skills))
-
-    print(skills)
-    skills_tratadas = []
-
-    for skill in skills:
-        skills_tratadas.append(" ".join(re.findall(r'\b\w+\b', skill)))
-
-    print(skills_tratadas)
 
 
 if __name__ == "__main__":
