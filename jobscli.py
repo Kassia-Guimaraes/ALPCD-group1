@@ -44,53 +44,33 @@ def top(n: int):
     except Exception as e:
         print(f"Erro: {e}")
 
-        
-def fetch_jobs_from_api(header, path, limit, total_data):
-    response = requests.get(f"{header}{path}", params={"limit": limit, "total_data": total_data})
-    response.raise_for_status()  # Levanta uma exceção para códigos de status HTTP 4xx/5xx
-    return response.json()
-
-        
+       
 @app.command()
 def search(location: str, company_name: str, n: int):
     """
-    Lista todos os trabalhos do tipo full-time publicados por uma determinada empresa numa determinada localidade.
-
-    Args:
-        location (str): Localidade dos trabalhos.
-        company_name (str): Nome da empresa.
-        n (int): Número de trabalhos a listar.
+    Lista os N trabalhos do tipo full-time publicados por uma determinada empresa em uma determinada localidade.
     """
-    header = "https://api.itjobs.pt/"
-    path = "job/list.json"
-
-    jobs = import_data(header, path, limit= n, total_data= n)
-    
-    if jobs is None:
-        try:
-            print("Tentando importar dados da API...")
-            jobs = fetch_jobs_from_api(header, path, limit= 1000, total_data= 1000)  # Obtém um número maior de trabalhos para filtrar
-            
-            
-        except requests.exceptions.RequestException as e:
-            print(f"Erro ao fazer a requisição: {e}.")
-            
-        except json.JSONDecodeError as e:
-            print(f"Erro ao decodificar JSON: {e}.")
-                
-        except Exception as e:
-            print(f"Ocorreu um erro inesperado: {e}.")
-
-    # Filtrar trabalhos pelo tipo, empresa e localidade
-    filtered_jobs = [
-        job for job in jobs
-        if any(loc['name'].lower() == location.lower() for loc in job['locations'])
-        and job['company']['name'].lower() == company_name.lower()
-        and any(t['name'].lower() == 'full-time' for t in job['types'])
-    ][:n]
-
-    print(json.dumps(filtered_jobs, indent=4, ensure_ascii=False))
-    return filtered_jobs
+    try:
+        datasets = import_data("https://api.itjobs.pt/", "job/list.json", 100, n)
+        
+        # Lista para armazenar os trabalhos que correspondem aos critérios
+        trabalhos_filtrados = []
+        
+        for vaga in datasets:
+            # Verificando se a vaga é full-time, da empresa e localidade especificadas
+            if vaga.get("company", {}).get("name") == company_name:
+                if any(re.search(location, loc["name"], re.IGNORECASE) for loc in vaga.get("locations", [])):
+                    if "full-time" in [tipo.get("name").lower() for tipo in vaga.get("types", [])]:
+                        trabalhos_filtrados.append(vaga)
+        
+        # Limitando ao número de trabalhos a mostrar
+        trabalhos_filtrados = trabalhos_filtrados[:n]
+        
+        # Imprimindo o resultado em formato JSON
+        print(json.dumps(trabalhos_filtrados, indent=4, ensure_ascii=False))
+        
+    except Exception as e:
+        print(f"Erro: {e}")
 
 
 @app.command()
