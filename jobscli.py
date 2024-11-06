@@ -9,7 +9,7 @@ import json
 app = typer.Typer()
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
-def top(n: int):
+def top(n: int = typer.Argument('número de vagas')):
     
     #Lista os N trabalhos mais recentes publicados pela itjobs.pt
     
@@ -45,7 +45,7 @@ def top(n: int):
 
        
 @app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, numa determinada localidade')
-def search(location: str, company_name: str, n: int):
+def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
     """
     Lista os N trabalhos do tipo full-time publicados por uma determinada empresa em uma determinada localidade.
     """
