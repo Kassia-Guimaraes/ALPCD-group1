@@ -3,20 +3,10 @@ from datetime import datetime
 import requests
 import typer
 import re
-
-
-app = typer.Typer()
-
-
-@app.command()
-from datasets import import_data, export_csv, request_data
-import requests
-import typer
-import re
 import json
 
-
 app = typer.Typer()
+
 
 @app.command()
 def top(n: int):
