@@ -10,13 +10,97 @@ app = typer.Typer()
 
 
 @app.command()
-def top():
-    return
+from datasets import import_data, export_csv, request_data
+import requests
+import typer
+import re
+import json
 
+
+app = typer.Typer()
 
 @app.command()
-def search():
-    return
+def top(n: int):
+    
+    #Lista os N trabalhos mais recentes publicados pela itjobs.pt
+    
+    try:
+        datasets = import_data("https://api.itjobs.pt/", "job/list.json", 100, n)
+        
+        jobs = []
+        for vaga in datasets:
+            DictVagas = {
+                "Título": vaga.get("title"),
+                "Empresa": vaga.get("company", {}).get("name"),
+                "Descrição": vaga.get("body")[:150] + '...' if vaga.get("body") else "Não disponível",
+                "Data de Publicação": vaga.get("publishedAt"),
+                "Salário": vaga.get("wage") if vaga.get("wage") else "Não informado",
+                "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
+            }
+            jobs.append(DictVagas)
+        
+        for vaga in jobs:
+            print(f"Título: {vaga['Título']}")
+            print(f"Empresa: {vaga['Empresa']}")
+            print(f"Descrição: {vaga['Descrição']}")
+            print(f"Data de Publicação: {vaga['Data de Publicação']}")
+            print(f"Salário: {vaga['Salário']}")
+            print(f"Localização: {vaga['Localização']}\n")
+            print("-" * 80)
+            
+        # Retornando as vagas formatadas como dicionário
+        return jobs
+        
+    except Exception as e:
+        print(f"Erro: {e}")
+
+        
+def fetch_jobs_from_api(header, path, limit, total_data):
+    response = requests.get(f"{header}{path}", params={"limit": limit, "total_data": total_data})
+    response.raise_for_status()  # Levanta uma exceção para códigos de status HTTP 4xx/5xx
+    return response.json()
+
+        
+@app.command()
+def search(location: str, company_name: str, n: int):
+    """
+    Lista todos os trabalhos do tipo full-time publicados por uma determinada empresa numa determinada localidade.
+
+    Args:
+        location (str): Localidade dos trabalhos.
+        company_name (str): Nome da empresa.
+        n (int): Número de trabalhos a listar.
+    """
+    header = "https://api.itjobs.pt/"
+    path = "job/list.json"
+
+    jobs = import_data(header, path, limit= n, total_data= n)
+    
+    if jobs is None:
+        try:
+            print("Tentando importar dados da API...")
+            jobs = fetch_jobs_from_api(header, path, limit= 1000, total_data= 1000)  # Obtém um número maior de trabalhos para filtrar
+            
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Erro ao fazer a requisição: {e}.")
+            
+        except json.JSONDecodeError as e:
+            print(f"Erro ao decodificar JSON: {e}.")
+                
+        except Exception as e:
+            print(f"Ocorreu um erro inesperado: {e}.")
+
+    # Filtrar trabalhos pelo tipo, empresa e localidade
+    filtered_jobs = [
+        job for job in jobs
+        if any(loc['name'].lower() == location.lower() for loc in job['locations'])
+        and job['company']['name'].lower() == company_name.lower()
+        and any(t['name'].lower() == 'full-time' for t in job['types'])
+    ][:n]
+
+    print(json.dumps(filtered_jobs, indent=4, ensure_ascii=False))
+    return filtered_jobs
 
 
 @app.command()
