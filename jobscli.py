@@ -22,7 +22,7 @@ def search():
 def company(company_name:str):
 
     try:
-        total_data = request_data('https://api.itjobs.pt/', path='job/search.json', limit=1, page=1)['total'] # num dados que existem
+        total_data = request_data('https://api.itjobs.pt/', path='job/list.json', limit=1, page=1)['total'] # num dados que existem
         data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=10) # lista com todos os resultados da página
 
         jobs = []
@@ -49,6 +49,41 @@ def company(company_name:str):
     except Exception as e:
         print(f'Erro: {e}')
         return e
+    
+@app.command()
+def locality(district:str):
+
+    try:
+        total_data = request_data('https://api.itjobs.pt/', path='job/list.json', limit=1, page=1)['total'] # num dados que existem
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=10) # lista com todos os resultados da página
+
+        jobs = []
+
+        for data in data_list:
+
+            try: #se a pessoa adicionar o id da localidade
+                for local in data.get('locations',''):
+                    if (data['locations']['id'] == int(district)):
+                        jobs.append(data.get('title',''))
+
+            except: 
+                for local in data.get('locations',''):
+                    match = re.search(fr'\b{district}\b', local['name'], re.IGNORECASE) #faz a busca sem considerar as letras maiúsculas e/ou minúsculas
+
+                    if match: #se encontrar o nome da companhia
+                        jobs.append(data.get('title', ''))
+        
+        if jobs:
+            print(jobs)
+            return jobs
+        
+        print(f'Nenhuma vaga encontrada da empresa {district}') #se a lista dos jobs estiver vazia
+        return jobs
+
+    except Exception as e:
+        print(f'Erro: {e}')
+        return e
+
 
 @app.command()
 def salary(job_id: int):
