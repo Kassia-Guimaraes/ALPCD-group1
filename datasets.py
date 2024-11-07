@@ -3,9 +3,9 @@ import requests
 import csv
 
 
-def request_data(header, path, limit, page):  # faz o import dos dados da página web
+def request_data(header, path, search, limit, page):  # faz o import dos dados da página web
 
-    url = f"{header}{path}?api_key={secret}&limit={limit}&page={page}"
+    url = f"{header}{path}?api_key={secret}&limit={limit}&page={page}{search}" #search caminho para
 
     headers = {'User-agent': 'group1-ALPCD'}
     payload = {}
@@ -24,7 +24,7 @@ def request_data(header, path, limit, page):  # faz o import dos dados da págin
 
 
 # retorna uma lista com todos os resultados
-def import_data(header, path, limit, total_data):
+def import_data(header, path, search, limit, total_data):
 
     # sabe quantas páginas são necessárias para chegar no total de dados
     last_page = int(total_data/limit)+1
@@ -34,13 +34,13 @@ def import_data(header, path, limit, total_data):
     for i in range(1, last_page+1):
 
         if (i == last_page):  # condição de paragem; página em pesquisa ser igual a última página que queremos os dados
-            data = request_data(header, path, rest, i)['results']
+            data = request_data(header, path, search=search, limit=rest, page=i)['results']
             results += data  # adiciona os dados obtidos
 
             return results
 
         # vai buscar à página web os dados
-        data = request_data(header, path, limit, i)['results']
+        data = request_data(header, path, search, limit, page=i)['results']
         results += data
 
         rest -= limit  # retira a quantidade do limite das páginas importadas
