@@ -386,13 +386,13 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
 
                         csv_jobs.append(dict_csv(data))
 
-            # Exporta os resultados para um CSV
-            export_csv("skills", csv_jobs)
+        # Exporta os resultados para um CSV
+        export_csv("skills", csv_jobs)
 
-            if not list_jobs:
-                print("Nenhuma empresa encontrada que requer a skill.")
-            else:
-                print(list_jobs)
+        if not list_jobs:
+            print("Nenhuma empresa encontrada que requer a skill.")
+        else:
+            print(list_jobs)
 
     except Exception as e:
         print(f'Erro: {e}')
@@ -435,7 +435,7 @@ def dict_csv(data):
         "Empresa": data["company"]["name"],
         "Descrição": description,
         "Data de Publicação": update_date,
-        "Salário": calc_salary(data["id"]),
+        # "Salário": calc_salary(data["id"]),
         "Localização": locations,
     }
 
