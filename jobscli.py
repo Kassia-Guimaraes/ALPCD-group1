@@ -5,6 +5,7 @@ import requests
 import typer
 import re
 import json
+from auxFunctions import countVacancies
 
 app = typer.Typer()
 
@@ -45,34 +46,66 @@ def top(n: int = typer.Argument('número de vagas')):
     except Exception as e:
         print(f"Erro: {e}")
 
-       
-@app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, numa determinada localidade')
+      
+@app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
 def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
-    """
-    Lista os N trabalhos do tipo full-time publicados por uma determinada empresa em uma determinada localidade.
-    """
+ 
+   # try:
+        findLocal= request_data('https://api.itjobs.pt/', path= 'location/list.json', limit= 100, page= 1)['results']
+        for local in findLocal: #procura por cada distrito através do seu id 
+            if location == local['name']:
+                idLocal= local['id']
+        print(idLocal)        
+        
+        #companys= request_data('https://api.itjobs.pt/', path= 'company/search.json', limit= 1, page= 1)['total']
+        findCompany= import_data('https://api.itjobs.pt/', path= 'company/search.json', limit= 100, total_data= 10)
+       
+        
+        for company in findCompany: #procura por cada empresas através do seu id
+            if company_name == company['name']:
+                idCompany= company['id']
+        print(idCompany)  
+        
+        total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
+                                  # num dados que existem
+                                  limit= 1, page= 1, search= f'&location={idLocal}&company={idCompany}')['total']
+       
+        
+"""  total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
+                                  # num dados que existem
+                                  limit= 1, page= 1)['total']
+       
+        # lista com todos os resultados da página
+        data_list = import_data('https://api.itjobs.pt/',
+                                path='job/list.json', limit=100, total_data=10)
+        # Verificar os dados importados
+        print(f"Dados importados: {json.dumps(datasets, indent=4, ensure_ascii=False)}")  # Depuração
+        
+        
+        # Lista para armazenar os trabalhos que correspondem aos critérios solicitados pelo utilizador
+        jobs = []        
+           
+            
+        for vacancy in datasets:
+                    # Verificar: se a vaga é full-time; a empresa; e a localidade especificadas
+                    if vacancy.get("company", {}).get("name") == company_name:
+                        if any(re.search(location, loc["name"], re.IGNORECASE) for loc in vacancy.get("locations", [])):
+                            if "full-time" in [tipo.get("name").lower() for tipo in vacancy.get("types", [])]:
+                                jobs.append(vacancy)
 
-    try:
-        datasets = import_data("https://api.itjobs.pt/", "job/list.json", 100, n)
+       
+        # Limita o número de trabalhos a mostrar
+        jobs = jobs[:n]
         
-        # Lista para armazenar os trabalhos que correspondem aos critérios
-        trabalhos_filtrados = []
-        
-        for vaga in datasets:
-            # Verificando se a vaga é full-time, da empresa e localidade especificadas
-            if vaga.get("company", {}).get("name") == company_name:
-                if any(re.search(location, loc["name"], re.IGNORECASE) for loc in vaga.get("locations", [])):
-                    if "full-time" in [tipo.get("name").lower() for tipo in vaga.get("types", [])]:
-                        trabalhos_filtrados.append(vaga)
-        
-        # Limitando ao número de trabalhos a mostrar
-        trabalhos_filtrados = trabalhos_filtrados[:n]
-        
-        # Imprimindo o resultado em formato JSON
-        print(json.dumps(trabalhos_filtrados, indent=4, ensure_ascii=False))
+        # Conta o número de vagas da empresa utilizando a função auxiliar countVacancies
+        vacancyNum = countVacancies(datasets, company_name, location)
+                
+        # Imprime o resultado em formato JSON
+        print(json.dumps(jobs, indent=4, ensure_ascii=False))
+        print(f"Número de vagas para {company_name} em {location}: {vacancyNum}")
         
     except Exception as e:
-        print(f"Erro: {e}")
+        print(f"Erro: {e}") """
 
 
 @app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
