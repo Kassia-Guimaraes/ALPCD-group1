@@ -61,19 +61,20 @@ def calc_salary(job_id):
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
 def top(n: int = typer.Argument('número de vagas')):
-
-    # Lista os N trabalhos mais recentes publicados pela itjobs.pt
-
+   
+    #Lista os N trabalhos mais recentes publicados pela itjobs.pt
+    
     try:
         datasets = import_data("https://api.itjobs.pt/",
-                               "job/list.json", 100, n, search=None)
+                               "job/list.json", search= None, limit= 100, total_data= n)
 
         jobs = []
         for vaga in datasets:
+            descricao = re.sub(r"<[^>]+>", "", vaga.get("body", ""))[:550] + '...' if vaga.get("body") else "Não disponível"
             DictVagas = {
                 "Título": vaga.get("title"),
                 "Empresa": vaga.get("company", {}).get("name"),
-                "Descrição": vaga.get("body")[:150] + '...' if vaga.get("body") else "Não disponível",
+                "Descrição": descricao, #vaga.get("body")[:150] + '...' if vaga.get("body") else "Não disponível",
                 "Data de Publicação": vaga.get("publishedAt"),
                 "Salário": vaga.get("wage") if vaga.get("wage") else "Não informado",
                 "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
@@ -81,13 +82,14 @@ def top(n: int = typer.Argument('número de vagas')):
             jobs.append(DictVagas)
 
         for vaga in jobs:
-            print(f"Título: {vaga['Título']}")
-            print(f"Empresa: {vaga['Empresa']}")
-            print(f"Descrição: {vaga['Descrição']}")
-            print(f"Data de Publicação: {vaga['Data de Publicação']}")
-            print(f"Salário: {vaga['Salário']}")
-            print(f"Localização: {vaga['Localização']}\n")
+            print(f"\033[1;35mTítulo:\033[0m {vaga['Título']}")
+            print(f"\033[1;35mEmpresa:\033[0m {vaga['Empresa']}")
+            print(f"\033[1;35mDescrição:\033[0m {vaga['Descrição']}")
+            print(f"\033[1;35mData de Publicação:\033[0m {vaga['Data de Publicação']}")
+            print(f"\033[1;35mSalário:\033[0m {vaga['Salário']}")
+            print(f"\033[1;35mLocalização:\033[0m {vaga['Localização']}\n")
             print("-" * 80)
+
 
         # Retornando as vagas formatadas como dicionário
         return jobs
@@ -95,31 +97,33 @@ def top(n: int = typer.Argument('número de vagas')):
     except Exception as e:
         print(f"Erro: {e}")
 
-
+      
 @app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
 def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
+ 
+    try:
+        findLocal= request_data('https://api.itjobs.pt/', path= 'location/list.json', search= None, limit= 100, page= 1)['results']
+        for local in findLocal: #procura por cada distrito através do seu id 
+            if location == local['name']:
+                idLocal= local['id']
+                
+        companys= request_data('https://api.itjobs.pt/', path= 'company/search.json', search= None, limit= 1, page= 1)['total']
+        findCompany= import_data('https://api.itjobs.pt/', path= 'company/search.json', search= None, limit= 100, total_data= companys)
+       
+        
+        for company in findCompany: #procura por cada empresas através do seu id
+            if company_name == company['name']:
+                idCompany= company['id']
+                
+             
+        dataset = import_data('https://api.itjobs.pt/', path='job/list.json', search= f'&location={idLocal}&company={idCompany}&type=1',
+                                  # num dados que existem
+                                  limit= 1, total_data= n)
+        print(dataset)
+        return dataset
 
-   # try:
-    findLocal = request_data(
-        'https://api.itjobs.pt/', path='location/list.json', limit=100, page=1)['results']
-    for local in findLocal:  # procura por cada distrito através do seu id
-        if location == local['name']:
-            idLocal = local['id']
-    print(idLocal)
-
-    # companys= request_data('https://api.itjobs.pt/', path= 'company/search.json', limit= 1, page= 1)['total']
-    findCompany = import_data(
-        'https://api.itjobs.pt/', path='company/search.json', limit=100, total_data=10)
-
-    for company in findCompany:  # procura por cada empresas através do seu id
-        if company_name == company['name']:
-            idCompany = company['id']
-    print(idCompany)
-
-    total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
-                              # num dados que existem
-                              limit=1, page=1, search=f'&location={idLocal}&company={idCompany}')['total']
-
+    except Exception as e:
+        print(f"Erro: {e}")
 
 """  total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
                                   # num dados que existem
@@ -152,12 +156,10 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
                 
         # Imprime o resultado em formato JSON
         print(json.dumps(jobs, indent=4, ensure_ascii=False))
-
-        print(f"Número de vagas para {company_name} em {location}: {vacancyNum}")
-        
-    except Exception as e:
-        print(f"Erro: {e}") """
-
+        print(f"Número de vagas para {company_name} em {location}: {vacancyNum}") """ 
+    
+       
+    
 
 @app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
 def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da empresa')):
