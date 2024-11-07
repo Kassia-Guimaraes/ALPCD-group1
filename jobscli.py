@@ -5,7 +5,7 @@ import requests
 import typer
 import re
 import json
-#from auxFunctions import countVacancies
+# from auxFunctions import countVacancies
 
 app = typer.Typer()
 
@@ -16,8 +16,11 @@ def calc_salary(job_id):
 
     try:
 
-        total_data = request_data('https://api.itjobs.pt/', path='job/search.json',search=None,limit=1, page=1)['total']# num dados que existem
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=total_data, search=None)  # lista com todos os resultados da página
+        total_data = request_data('https://api.itjobs.pt/', path='job/search.json',
+                                  # num dados que existem
+                                  search=None, limit=1, page=1)['total']
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100,
+                                total_data=total_data, search=None)  # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
@@ -25,7 +28,7 @@ def calc_salary(job_id):
             if data.get('id', '') == job_id:  # testa com o job_id dado pelo utilizador
 
                 if data.get('wage', ''):  # se 'wage' diferente de NULL
-                    #print('€', data.get('wage', ''))
+                    # print('€', data.get('wage', ''))
                     return data.get('wage', '')
 
                 for expression in search_salary:
@@ -35,7 +38,7 @@ def calc_salary(job_id):
                         fr'[^.<>!?;^|]*?\b{expression}[s|S]al[á|a]r[io|ial|iais|y]*\b[^.<>]*?(?=[.<;:!?^|])', data.get('body', ''))
 
                     if match:
-                        #print(match.group(0))
+                        # print(match.group(0))
                         return match.group(0)
 
                     match = re.search(
@@ -44,24 +47,23 @@ def calc_salary(job_id):
                         print(match.group(0))
                         return match.group(0)
 
-                #print('Nenhum dado sobre salário encontrado')
+                # print('Nenhum dado sobre salário encontrado')
                 return 'Nenhum dado sobre salário encontrado'
 
         # caso passe todo o ciclo e não encontre o job_id
-        #print('JobID não encontrado, por favor verifique se o código da vaga está correto.')
+        # print('JobID não encontrado, por favor verifique se o código da vaga está correto.')
         return 'JobID não encontrado'
 
     except Exception as e:
-        #print(f'Erro: {e}')
+        # print(f'Erro: {e}')
         return e
 
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
 def top(n: int = typer.Argument('número de vagas')):
 
-    
-    #Lista os N trabalhos mais recentes publicados pela itjobs.pt
-    
+    # Lista os N trabalhos mais recentes publicados pela itjobs.pt
+
     try:
         datasets = import_data("https://api.itjobs.pt/",
                                "job/list.json", 100, n, search=None)
@@ -93,32 +95,32 @@ def top(n: int = typer.Argument('número de vagas')):
     except Exception as e:
         print(f"Erro: {e}")
 
-      
+
 @app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
 def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
 
- 
    # try:
-        findLocal= request_data('https://api.itjobs.pt/', path= 'location/list.json', limit= 100, page= 1)['results']
-        for local in findLocal: #procura por cada distrito através do seu id 
-            if location == local['name']:
-                idLocal= local['id']
-        print(idLocal)        
-        
-        #companys= request_data('https://api.itjobs.pt/', path= 'company/search.json', limit= 1, page= 1)['total']
-        findCompany= import_data('https://api.itjobs.pt/', path= 'company/search.json', limit= 100, total_data= 10)
-       
-        
-        for company in findCompany: #procura por cada empresas através do seu id
-            if company_name == company['name']:
-                idCompany= company['id']
-        print(idCompany)  
-        
-        total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
-                                  # num dados que existem
-                                  limit= 1, page= 1, search= f'&location={idLocal}&company={idCompany}')['total']
-       
-        
+    findLocal = request_data(
+        'https://api.itjobs.pt/', path='location/list.json', limit=100, page=1)['results']
+    for local in findLocal:  # procura por cada distrito através do seu id
+        if location == local['name']:
+            idLocal = local['id']
+    print(idLocal)
+
+    # companys= request_data('https://api.itjobs.pt/', path= 'company/search.json', limit= 1, page= 1)['total']
+    findCompany = import_data(
+        'https://api.itjobs.pt/', path='company/search.json', limit=100, total_data=10)
+
+    for company in findCompany:  # procura por cada empresas através do seu id
+        if company_name == company['name']:
+            idCompany = company['id']
+    print(idCompany)
+
+    total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
+                              # num dados que existem
+                              limit=1, page=1, search=f'&location={idLocal}&company={idCompany}')['total']
+
+
 """  total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
                                   # num dados que existem
                                   limit= 1, page= 1)['total']
@@ -158,7 +160,7 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
 
 
 @app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
-def company(company_name:str = typer.Argument('ID ou nome',help='Nome ou ID da empresa')):
+def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da empresa')):
 
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
@@ -189,7 +191,7 @@ def company(company_name:str = typer.Argument('ID ou nome',help='Nome ou ID da e
 
         # Exporta os resultados para um CSV
         export_csv("locality", csv_jobs)
-        
+
         if jobs:
             print(jobs)
             return jobs
@@ -200,9 +202,9 @@ def company(company_name:str = typer.Argument('ID ou nome',help='Nome ou ID da e
         print(f'Erro: {e}')
         return e
 
-    
+
 @app.command(help='Buscar todas as vagas disponíveis por distrito')
-def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID da localidade que deseja pesquisar a vaga')):
+def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID da localidade que deseja pesquisar a vaga')):
 
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
@@ -213,7 +215,7 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
                                 path='job/list.json', limit=100, total_data=10, search=None)
 
         jobs = []
-        cvs_jobs = []
+        csv_jobs = []
 
         for data in data_list:
 
@@ -232,16 +234,16 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
                     if match:  # se encontrar o nome da companhia
                         jobs.append(data.get('title', ''))
                         csv_jobs.append(dict_csv(data))
-        
+
         # Exporta os resultados para um CSV
         export_csv("locality", csv_jobs)
-        
+
         if jobs:
             print(jobs)
             return jobs
 
-        
-        print(f'Nenhuma vaga encontrada em {district}') #se a lista dos jobs estiver vazia
+        # se a lista dos jobs estiver vazia
+        print(f'Nenhuma vaga encontrada em {district}')
         return jobs
 
     except Exception as e:
@@ -250,118 +252,109 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
 
 
 @app.command(help="Pesquisar salário de uma vaga de emprego específica")
-def salary(job_id: int = typer.Argument('Número inteiro',help='ID da vaga para pesquisa de salários.')):
+def salary(job_id: int = typer.Argument('Número inteiro', help='ID da vaga para pesquisa de salários.')):
 
     print(calc_salary(job_id))
 
 
-
 @app.command(help='Mostrar quais os trabalhos que requerem uma determinada lista de skills, num determinado período de tempo')
-def skills(skills: list[str] = typer.Argument(help='Lista com as skills que deseja pesquisar'), start_date: str = typer.Argument('dd-mm-aaaa',help='Data inicial da pesquisa'), end_date: str = typer.Argument('dd-mm-aaaa',help='Data final da pesquisa')):
-    # Lista de skills possiveis
-    list_skills = [
-        # Linguagens de Programação
-        "python", "java", "javascript", "c#", "ruby", "php",
-        "swift", "go", "kotlin", "rust", "typescript", "scala",
-        "perl", "c", "c++", "dart",
+def skills(skills: list[str] = typer.Argument(help='Lista com as skills que deseja pesquisar'), start_date: str = typer.Argument('dd-mm-aaaa', help='Data inicial da pesquisa'), end_date: str = typer.Argument('dd-mm-aaaa', help='Data final da pesquisa')):
+    try:
+        # Lista de skills possiveis
+        list_skills = [
+            # Linguagens de Programação
+            "python", "java", "javascript", "c#", "ruby", "php",
+            "swift", "go", "kotlin", "rust", "typescript", "scala",
+            "perl", "c", "c++", "dart",
 
-        # Desenvolvimento Web
-        "html", "css", "react", "angular", "vue.js", "bootstrap",
-        "node.js", "express", "jquery", "sass", "less",
+            # Desenvolvimento Web
+            "html", "css", "react", "angular", "vue.js", "bootstrap",
+            "node.js", "express", "jquery", "sass", "less",
 
-        # Desenvolvimento de Aplicativos
-        "flutter", "react native", "ionic", "xamarin",
+            # Desenvolvimento de Aplicativos
+            "flutter", "react native", "ionic", "xamarin",
 
-        # Banco de Dados
-        "sql", "nosql", "mongodb", "postgresql", "mysql",
-        "sqlite", "oracledb", "redis", "firebase",
+            # Banco de Dados
+            "sql", "nosql", "mongodb", "postgresql", "mysql",
+            "sqlite", "oracledb", "redis", "firebase",
 
-        # DevOps e Infraestrutura
-        "docker", "kubernetes", "aws", "azure",
-        "terraform", "ansible", "jenkins", "git", "ci/cd",
+            # DevOps e Infraestrutura
+            "docker", "kubernetes", "aws", "azure",
+            "terraform", "ansible", "jenkins", "git", "ci/cd",
 
-        # Ciência de Dados e Machine Learning
-        "data science", "tensorflow",
-        "pytorch", "pandas", "numpy", "r", "matplotlib",
-        "scikit-learn", "keras", "statistics", "ciência de dados",
-        "estatística",
+            # Ciência de Dados e Machine Learning
+            "data science", "tensorflow",
+            "pytorch", "pandas", "numpy", "r", "matplotlib",
+            "scikit-learn", "keras", "statistics", "ciência de dados",
+            "estatística",
 
-        # Metodologias e Ferramentas
-        "agile", "scrum", "kanban", "devops", "github", "bitbucket",
-        "jira", "trello", "confluence",
+            # Metodologias e Ferramentas
+            "agile", "scrum", "kanban", "devops", "github", "bitbucket",
+            "jira", "trello", "confluence",
 
-        # Segurança da Informação
-        "cybersecurity",
+            # Segurança da Informação
+            "cybersecurity",
 
-        # Outras Skills Relevantes
-        "blockchain", "iot", "ar/vr", "ui/ux", "seo",
-        "api", "development", "graphql", "performance",
+            # Outras Skills Relevantes
+            "blockchain", "iot", "ar/vr", "ui/ux", "seo",
+            "api", "development", "graphql", "performance",
 
-        # Soft Skills
-        "communication", "comunicação", "teamwork",
-        "adaptability", "leadership", "trabalho em equipa",
+            # Soft Skills
+            "communication", "comunicação", "teamwork",
+            "adaptability", "leadership", "trabalho em equipa",
 
-        # Linguas
-        "inglês", "françes", "espanhol", "português","english",
+            # Linguas
+            "inglês", "françes", "espanhol", "português", "english",
 
-        # Licenciaturas
-        "engenharia informática", "ciência de dados"
-    ]
+            # Licenciaturas
+            "engenharia informática", "ciência de dados"
+        ]
 
-    # Tratamento das skills
-    skills = re.split(r',', skills[0])
+        # Tratamento das skills
+        skills = re.split(r',', skills[0])
 
-    for skill in skills:
-        if skill.lower() not in list_skills:
-            return print(f"{skill} não é compatível com uma skill!")
+        for skill in skills:
+            if skill.lower() not in list_skills:
+                return print(f"{skill} não é compatível com uma skill!")
 
-    # Tratamento das datas
-    start_date, end_date = map(processing_data, (start_date, end_date))
+        # Tratamento das datas
+        start_date, end_date = map(processing_data, (start_date, end_date))
 
-    # Verifica se as datas são válidas
-    if start_date is None or end_date is None:
-        return print("Data inválida!!")
+        # Verifica se as datas são válidas
+        if start_date is None or end_date is None:
+            return print("Data inválida!!")
 
-    # Requisição dos dados
-    res = request_data('https://api.itjobs.pt/', 'job/list.json', search=None, limit=1, page=1)
-    total_data = res["total"]
+        # Requisição dos dados
+        res = request_data('https://api.itjobs.pt/',
+                           'job/list.json', search=None, limit=1, page=1)
+        total_data = res["total"]
 
-    datasets = import_data('https://api.itjobs.pt/',
-                           'job/list.json', search=None, limit=100, total_data=int(total_data))
+        datasets = import_data('https://api.itjobs.pt/',
+                               'job/list.json', search=None, limit=100, total_data=int(total_data))
 
-    # Inicialização do processo de captura das empresas que requerem as skills naquele período
-    list_jobs = []
-    csv_jobs = []
+        # Inicialização do processo de captura das empresas que requerem as skills naquele período
+        list_jobs = []
+        csv_jobs = []
 
-    for data in datasets:
-        body = data["body"]
-        update_date = data["updatedAt"]
-        if update_date is None:
-            update_date = data["publishedAt"]
+        for data in datasets:
+            body = data["body"]
+            update_date = data["updatedAt"]
+            if update_date is None:
+                update_date = data["publishedAt"]
 
-        update_date = re.sub(
-            r"(\d{4}-\d{2}-\d{2})( \d{2}:\d{2}:\d{2})", r"\1", update_date)
+            update_date = re.sub(
+                r"(\d{4}-\d{2}-\d{2})( \d{2}:\d{2}:\d{2})", r"\1", update_date)
 
-        update_datetime = datetime.strptime(update_date, "%Y-%m-%d")
+            update_datetime = datetime.strptime(update_date, "%Y-%m-%d")
 
-        # Verifica se a data de publicação está no intervalo
-        if start_date <= update_datetime <= end_date:
+            # Verifica se a data de publicação está no intervalo
+            if start_date <= update_datetime <= end_date:
 
-            # Verifica se todas as skills estão presentes no body do job
-            all_skills_found = True
-            for skill in skills:
-                if not re.search(rf"\b{skill}\b", body, re.IGNORECASE):
-                    all_skills_found = False
-                    break
-
-            if all_skills_found:
-                company = data["company"]["name"]
-                id_job = data["id"]
-
-                # Verifica se a empresa já existe na lista
-                for job in list_jobs:
-                    if job["Empresa"] == company:
-                        job["Id_job"].append(id_job)
+                # Verifica se todas as skills estão presentes no body do job
+                all_skills_found = True
+                for skill in skills:
+                    if not re.search(rf"\b{skill}\b", body, re.IGNORECASE):
+                        all_skills_found = False
                         break
 
                 if all_skills_found:
@@ -373,23 +366,33 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
                         if job["Empresa"] == company:
                             job["Id_job"].append(id_job)
                             break
-                    # Se não existir adiciona o dicionario respetivo daquela empresa
-                    else:
-                        job_info = {
-                            "Empresa": company,
-                            "Id_job": [id_job],
-                        }
-                        list_jobs.append(job_info)
 
-                    csv_jobs.append(dict_csv(data))
+                    if all_skills_found:
+                        company = data["company"]["name"]
+                        id_job = data["id"]
 
-        # Exporta os resultados para um CSV
-        export_csv("skills", csv_jobs)
+                        # Verifica se a empresa já existe na lista
+                        for job in list_jobs:
+                            if job["Empresa"] == company:
+                                job["Id_job"].append(id_job)
+                                break
+                        # Se não existir adiciona o dicionario respetivo daquela empresa
+                        else:
+                            job_info = {
+                                "Empresa": company,
+                                "Id_job": [id_job],
+                            }
+                            list_jobs.append(job_info)
 
-        if not list_jobs:
-            print("Nenhuma empresa encontrada que requer a skill.")
-        else:
-            print(list_jobs)
+                        csv_jobs.append(dict_csv(data))
+
+            # Exporta os resultados para um CSV
+            export_csv("skills", csv_jobs)
+
+            if not list_jobs:
+                print("Nenhuma empresa encontrada que requer a skill.")
+            else:
+                print(list_jobs)
 
     except Exception as e:
         print(f'Erro: {e}')
@@ -410,7 +413,7 @@ def dict_csv(data):
         description = re.sub(r"<[^>]+>|\n+|\r|•", "",
                              data["company"]["description"])
     else:
-        description = "Descrição não descrita!"
+        description = "Descrição não mencionada!"
 
         # Verifique as localizações
     locations = []
@@ -421,10 +424,10 @@ def dict_csv(data):
         locations = "Localização não mencionada!"
 
     # Verificar o salário
-    if data["wage"] is None:
-        salary = "Não Meniconado"
-    else:
-        salary = data["wage"]
+    # if data["wage"] is None:
+        # salary = "Não Meniconado"
+    # else:
+        # salary = data["wage"]
 
     # Dicionário para guardar em csv
     csv_jobs_info = {
@@ -432,7 +435,7 @@ def dict_csv(data):
         "Empresa": data["company"]["name"],
         "Descrição": description,
         "Data de Publicação": update_date,
-        "Salário": salary,
+        "Salário": calc_salary(data["id"]),
         "Localização": locations,
     }
 
