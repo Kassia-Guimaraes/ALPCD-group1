@@ -241,14 +241,14 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
 
         # Outras Skills Relevantes
         "blockchain", "iot", "ar/vr", "ui/ux", "seo",
-        "api", "development", "graphql",
+        "api", "development", "graphql", "performance",
 
         # Soft Skills
         "communication", "comunicação", "teamwork",
         "adaptability", "leadership", "trabalho em equipa",
 
         # Linguas
-        "inglês", "françes", "espanhol", "português",
+        "inglês", "françes", "espanhol", "português","english",
 
         # Licenciaturas
         "engenharia informática", "ciência de dados"
@@ -269,11 +269,11 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
         return print("Data inválida!!")
 
     # Requisição dos dados
-    res = request_data('https://api.itjobs.pt/', 'job/list.json', 1, 1, search=None)
+    res = request_data('https://api.itjobs.pt/', 'job/list.json', search=None, limit=1, page=1)
     total_data = res["total"]
 
     datasets = import_data('https://api.itjobs.pt/',
-                           'job/list.json', 100, int(total_data), search=None)
+                           'job/list.json', search=None, limit=100, total_data=int(total_data))
 
     # Inicialização do processo de captura das empresas que requerem as skills naquele período
     list_jobs = []
@@ -319,7 +319,7 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
 
                 # Tratamento da descrição (retirar paragrafos,etc)
                 description = re.sub(
-                    r"<[^>]+>|\n+|\r", "", data["company"]["description"])
+                    r"<[^>]+>|\n+|\r|•|\s{2,}", "", data["company"]["description"])
 
                 # Dicionário para guardar em csv
                 csv_jobs_info = {
@@ -327,7 +327,7 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
                     "Empresa": company,
                     "Descrição": description,
                     "Data de Publicação": update_date,
-                    # "Salário": salary(data["id"]),
+                    "Salário": salary(data["id"]),
                     "Localização": data["locations"][0]["name"],
                 }
                 csv_jobs.append(csv_jobs_info)
