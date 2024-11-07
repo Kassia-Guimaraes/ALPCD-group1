@@ -5,7 +5,8 @@ import csv
 
 def request_data(header, path, search, limit, page):  # faz o import dos dados da página web
 
-    url = f"{header}{path}?api_key={secret}&limit={limit}&page={page}{search}" #search caminho para
+    url = f"{header}{path}?api_key={secret}&limit={
+        limit}&page={page}{search}"  # search caminho para
 
     headers = {'User-agent': 'group1-ALPCD'}
     payload = {}
@@ -34,7 +35,8 @@ def import_data(header, path, search, limit, total_data):
     for i in range(1, last_page+1):
 
         if (i == last_page):  # condição de paragem; página em pesquisa ser igual a última página que queremos os dados
-            data = request_data(header, path, search=search, limit=rest, page=i)['results']
+            data = request_data(header, path, search=search,
+                                limit=rest, page=i)['results']
             results += data  # adiciona os dados obtidos
 
             return results
@@ -59,5 +61,3 @@ def export_csv(name, dict):
 
         for dic in dict:
             writer.writerow(dic)
-
-    print("Arquivo CSV criado com sucesso!")
