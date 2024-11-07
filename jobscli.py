@@ -58,6 +58,7 @@ def calc_salary(job_id):
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
 def top(n: int = typer.Argument('número de vagas')):
+
     
     #Lista os N trabalhos mais recentes publicados pela itjobs.pt
     
@@ -95,6 +96,7 @@ def top(n: int = typer.Argument('número de vagas')):
       
 @app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
 def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
+
  
    # try:
         findLocal= request_data('https://api.itjobs.pt/', path= 'location/list.json', limit= 100, page= 1)['results']
@@ -148,6 +150,7 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
                 
         # Imprime o resultado em formato JSON
         print(json.dumps(jobs, indent=4, ensure_ascii=False))
+
         print(f"Número de vagas para {company_name} em {location}: {vacancyNum}")
         
     except Exception as e:
@@ -166,12 +169,14 @@ def company(company_name:str = typer.Argument('ID ou nome',help='Nome ou ID da e
                                 path='job/list.json', limit=100, total_data=10, search=None)
 
         jobs = []
+        csv_jobs = []
 
         for data in data_list:
 
             try:  # se a pessoa adicionar o id da empresa
                 if (data.get('companyId', '') == int(company_name)):
                     jobs.append(data.get('title', ''))
+                    csv_jobs.append(dict_csv(data))
 
             except:
                 # faz a busca sem considerar as letras maiúsculas e/ou minúsculas
@@ -180,7 +185,11 @@ def company(company_name:str = typer.Argument('ID ou nome',help='Nome ou ID da e
 
                 if match:  # se encontrar o nome da companhia
                     jobs.append(data.get('title', ''))
+                    csv_jobs.append(dict_csv(data))
 
+        # Exporta os resultados para um CSV
+        export_csv("locality", csv_jobs)
+        
         if jobs:
             print(jobs)
             return jobs
@@ -204,6 +213,7 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
                                 path='job/list.json', limit=100, total_data=10, search=None)
 
         jobs = []
+        cvs_jobs = []
 
         for data in data_list:
 
@@ -211,6 +221,7 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
                 for local in data.get('locations', ''):
                     if (data['locations']['id'] == int(district)):
                         jobs.append(data.get('title', ''))
+                        csv_jobs.append(dict_csv(data))
 
             except:
                 for local in data.get('locations', ''):
@@ -220,7 +231,11 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
 
                     if match:  # se encontrar o nome da companhia
                         jobs.append(data.get('title', ''))
-
+                        csv_jobs.append(dict_csv(data))
+        
+        # Exporta os resultados para um CSV
+        export_csv("locality", csv_jobs)
+        
         if jobs:
             print(jobs)
             return jobs
@@ -348,36 +363,80 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
                     if job["Empresa"] == company:
                         job["Id_job"].append(id_job)
                         break
-                # Se não existir adiciona o dicionario respetivo daquela empresa
-                else:
-                    job_info = {
-                        "Empresa": company,
-                        "Id_job": [id_job],
-                    }
-                    list_jobs.append(job_info)
 
-                # Tratamento da descrição (retirar paragrafos,etc)
-                description = re.sub(
-                    r"<[^>]+>|\n+|\r|•|\s{2,}", "", data["company"]["description"])
+                if all_skills_found:
+                    company = data["company"]["name"]
+                    id_job = data["id"]
 
-                # Dicionário para guardar em csv
-                csv_jobs_info = {
-                    "Título": data["title"],
-                    "Empresa": company,
-                    "Descrição": description,
-                    "Data de Publicação": update_date,
-                    "Salário": calc_salary(data["id"]),
-                    "Localização": data["locations"][0]["name"],
-                }
-                csv_jobs.append(csv_jobs_info)
+                    # Verifica se a empresa já existe na lista
+                    for job in list_jobs:
+                        if job["Empresa"] == company:
+                            job["Id_job"].append(id_job)
+                            break
+                    # Se não existir adiciona o dicionario respetivo daquela empresa
+                    else:
+                        job_info = {
+                            "Empresa": company,
+                            "Id_job": [id_job],
+                        }
+                        list_jobs.append(job_info)
 
-    # Exporta os resultados para um CSV
-    export_csv("jobs", csv_jobs)
+                    csv_jobs.append(dict_csv(data))
 
-    if not list_jobs:
-        print("Nenhuma empresa encontrada que requer a skill.")
+        # Exporta os resultados para um CSV
+        export_csv("skills", csv_jobs)
+
+        if not list_jobs:
+            print("Nenhuma empresa encontrada que requer a skill.")
+        else:
+            print(list_jobs)
+
+    except Exception as e:
+        print(f'Erro: {e}')
+        return e
+
+
+def dict_csv(data):
+    # Tratamento da data de publicação
+    update_date = data["updatedAt"]
+    if update_date is None:
+        update_date = data["publishedAt"]
+
+    update_date = re.sub(
+        r"(\d{4}-\d{2}-\d{2})( \d{2}:\d{2}:\d{2})", r"\1", update_date)
+
+    # Tratamento da descrição (retirar paragrafos,etc)
+    if "description" in data["company"]:
+        description = re.sub(r"<[^>]+>|\n+|\r|•", "",
+                             data["company"]["description"])
     else:
-        print(list_jobs)
+        description = "Descrição não descrita!"
+
+        # Verifique as localizações
+    locations = []
+    if "locations" in data:
+        for location in data["locations"]:
+            locations.append(location["name"])
+    else:
+        locations = "Localização não mencionada!"
+
+    # Verificar o salário
+    if data["wage"] is None:
+        salary = "Não Meniconado"
+    else:
+        salary = data["wage"]
+
+    # Dicionário para guardar em csv
+    csv_jobs_info = {
+        "Título": data["title"],
+        "Empresa": data["company"]["name"],
+        "Descrição": description,
+        "Data de Publicação": update_date,
+        "Salário": salary,
+        "Localização": locations,
+    }
+
+    return csv_jobs_info
 
 
 def processing_data(date):
