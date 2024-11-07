@@ -16,7 +16,7 @@ def top(n: int = typer.Argument('número de vagas')):
     
     try:
         datasets = import_data("https://api.itjobs.pt/",
-                               "job/list.json", 100, n)
+                               "job/list.json", 100, n, search=None)
 
         jobs = []
         for vaga in datasets:
@@ -81,10 +81,10 @@ def company(company_name:str = typer.Argument('ID ou nome',help='Nome ou ID da e
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
                                   # num dados que existem
-                                  limit=1, page=1)['total']
+                                  limit=1, page=1, search=None)['total']
         # lista com todos os resultados da página
         data_list = import_data('https://api.itjobs.pt/',
-                                path='job/list.json', limit=100, total_data=10)
+                                path='job/list.json', limit=100, total_data=10, search=None)
 
         jobs = []
 
@@ -119,10 +119,10 @@ def locality(district:str = typer.Argument('nome do distrito',help='Nome ou ID d
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
                                   # num dados que existem
-                                  limit=1, page=1)['total']
+                                  limit=1, page=1, search=None)['total']
         # lista com todos os resultados da página
         data_list = import_data('https://api.itjobs.pt/',
-                                path='job/list.json', limit=100, total_data=10)
+                                path='job/list.json', limit=100, total_data=10, search=None)
 
         jobs = []
 
@@ -163,11 +163,8 @@ def salary(job_id: int = typer.Argument('Número inteiro',help='ID da vaga para 
 
     try:
 
-        total_data = request_data('https://api.itjobs.pt/', path='job/search.json',
-                                  # num dados que existem
-                                  limit=1, page=1)['total']
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json',
-                                limit=100, total_data=total_data)  # lista com todos os resultados da página
+        total_data = request_data('https://api.itjobs.pt/', path='job/search.json',search=None,limit=1, page=1)['total']# num dados que existem
+        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100, total_data=total_data, search=None)  # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
@@ -272,11 +269,11 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
         return print("Data inválida!!")
 
     # Requisição dos dados
-    res = request_data('https://api.itjobs.pt/', 'job/list.json', 1, 1)
+    res = request_data('https://api.itjobs.pt/', 'job/list.json', 1, 1, search=None)
     total_data = res["total"]
 
     datasets = import_data('https://api.itjobs.pt/',
-                           'job/list.json', 100, int(total_data))
+                           'job/list.json', 100, int(total_data), search=None)
 
     # Inicialização do processo de captura das empresas que requerem as skills naquele período
     list_jobs = []
