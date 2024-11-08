@@ -55,8 +55,8 @@ def calc_salary(job_id):
         return 'JobID não encontrado'
 
     except Exception as e:
-        # print(f'Erro: {e}')
-        return e
+        print(f'Erro em clacular o salário: {e}')
+        return None
 
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
@@ -437,7 +437,7 @@ def dict_csv(data):
         "Empresa": data["company"]["name"],
         "Descrição": description,
         "Data de Publicação": update_date,
-        # "Salário": calc_salary(data["id"]),
+        "Salário": calc_salary(data["id"]),
         "Localização": locations,
     }
 
