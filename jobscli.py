@@ -64,7 +64,9 @@ def top(n: int = typer.Argument('número de vagas')):
 
         jobs = []
         for vaga in datasets:
-            descricao = re.sub(r"<[^>]+>", "", vaga.get("body", ""))[:550] + '...' if vaga.get("body") else "Não disponível"
+            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")) if vaga.get("body") else "Não disponível"
+            descricao = body[:5000] + '...' if len(body) > 5000 else body  
+            
             DictVagas = {
                 "Título": vaga.get("title"),
                 "Empresa": vaga.get("company", {}).get("name"),
@@ -84,7 +86,12 @@ def top(n: int = typer.Argument('número de vagas')):
             print(f"\033[1;35mLocalização:\033[0m {vaga['Localização']}\n")
             print("-" * 80)
 
-
+        # Pergunta ao usuário se deseja salvar a pesquisa
+        salvar_pesquisa = input("Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+        if salvar_pesquisa == 's':
+            nome_arquivo = input("Digite o nome do arquivo (sem a extensão .csv): ")
+            export_csv(nome_arquivo, jobs)
+            print(f"Pesquisa salva em {nome_arquivo}.csv")
         # Retornando as vagas formatadas como dicionário
         return jobs
 
@@ -92,68 +99,83 @@ def top(n: int = typer.Argument('número de vagas')):
         print(f"Erro: {e}")
 
       
-@app.command(help='Selecionar  todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
-def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
- 
-    try:
-        findLocal= request_data('https://api.itjobs.pt/', path= 'location/list.json', search= None, limit= 100, page= 1)['results']
-        for local in findLocal: #procura por cada distrito através do seu id 
-            if location == local['name']:
-                idLocal= local['id']
-                
-        companys= request_data('https://api.itjobs.pt/', path= 'company/search.json', search= None, limit= 1, page= 1)['total']
-        findCompany= import_data('https://api.itjobs.pt/', path= 'company/search.json', search= None, limit= 100, total_data= companys)
-       
-        
-        for company in findCompany: #procura por cada empresas através do seu id
-            if company_name == company['name']:
-                idCompany= company['id']
-                
-             
-        dataset = import_data('https://api.itjobs.pt/', path='job/list.json', search= f'&location={idLocal}&company={idCompany}&type=1',
-                                  # num dados que existem
-                                  limit= 1, total_data= n)
-        print(dataset)
-        return dataset
 
+@app.command(help='Selecionar todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
+def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
+    try:
+        if not isinstance(n, int):
+            print("Erro: o número de vagas deve ser um valor inteiro.")
+            return
+        
+        # Procura pelo ID da localização
+        findLocal = request_data('https://api.itjobs.pt/', path='location/list.json', search=None, limit=100, page=1)['results']
+        idLocal = None
+        for local in findLocal:
+            if location == local['name']:
+                idLocal = local['id']
+                break
+
+        if not idLocal:
+            print(f"Localização '{location}' não encontrada.")
+            return
+
+        # Procura pelo ID da empresa
+        companys = request_data('https://api.itjobs.pt/', path='company/search.json', search=None, limit=1, page=1)['total']
+        findCompany = import_data('https://api.itjobs.pt/', path='company/search.json', search=None, limit=100, total_data=companys)
+        idCompany = None
+        for company in findCompany:
+            if company_name == company['name']:
+                idCompany = company['id']
+                break
+
+        if not idCompany:
+            print(f"Empresa '{company_name}' não encontrada.")
+            return
+
+        # Busca as vagas de emprego
+        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={idLocal}&company={idCompany}&type=1', limit=n, total_data=n)
+
+        # Limita as vagas de acordo com o número solicitado
+        jobs = []
+        for vaga in datasets[:n]:
+            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")) if vaga.get("body") else "Não disponível"
+            descricao = body[:5000] + '...' if len(body) > 5000 else body  
+            
+            DictVagas = {
+                "Título": vaga.get("title"),
+                "Empresa": vaga.get("company", {}).get("name"),
+                "Descrição": descricao,
+                "Data de Publicação": vaga.get("publishedAt"),
+                "Salário": vaga.get("wage") if vaga.get("wage") else "Não informado",
+                "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
+            }
+            jobs.append(DictVagas)
+
+        # Exibe as vagas formatadas
+        for vaga in jobs:
+            print(f"\033[1;32mTítulo:\033[0m {vaga['Título']}")
+            print(f"\033[1;32mEmpresa:\033[0m {vaga['Empresa']}")
+            print(f"\033[1;32mDescrição:\033[0m {vaga['Descrição']}")
+            print(f"\033[1;32mData de Publicação:\033[0m {vaga['Data de Publicação']}")
+            print(f"\033[1;32mSalário:\033[0m {vaga['Salário']}")
+            print(f"\033[1;32mLocalização:\033[0m {vaga['Localização']}\n")
+            print("-" * 80)
+            
+        # Pergunta ao usuário se deseja salvar a pesquisa
+        salvar_pesquisa = input("Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+        if salvar_pesquisa == 's':
+            nome_arquivo = input("Digite o nome do arquivo (sem a extensão .csv): ")
+            export_csv(nome_arquivo, jobs)
+            print(f"Pesquisa salva em {nome_arquivo}.csv")
+
+        return jobs
+
+    except ValueError as ve:
+        print(f"Erro de Valor: {ve}")
+        
     except Exception as e:
         print(f"Erro: {e}")
-
-"""  total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
-                                  # num dados que existem
-                                  limit= 1, page= 1)['total']
-       
-        # lista com todos os resultados da página
-        data_list = import_data('https://api.itjobs.pt/',
-                                path='job/list.json', limit=100, total_data=10)
-        # Verificar os dados importados
-        print(f"Dados importados: {json.dumps(datasets, indent=4, ensure_ascii=False)}")  # Depuração
         
-        
-        # Lista para armazenar os trabalhos que correspondem aos critérios solicitados pelo utilizador
-        jobs = []        
-           
-            
-        for vacancy in datasets:
-                    # Verificar: se a vaga é full-time; a empresa; e a localidade especificadas
-                    if vacancy.get("company", {}).get("name") == company_name:
-                        if any(re.search(location, loc["name"], re.IGNORECASE) for loc in vacancy.get("locations", [])):
-                            if "full-time" in [tipo.get("name").lower() for tipo in vacancy.get("types", [])]:
-                                jobs.append(vacancy)
-
-       
-        # Limita o número de trabalhos a mostrar
-        jobs = jobs[:n]
-        
-        # Conta o número de vagas da empresa utilizando a função auxiliar countVacancies
-        vacancyNum = countVacancies(datasets, company_name, location)
-                
-        # Imprime o resultado em formato JSON
-        print(json.dumps(jobs, indent=4, ensure_ascii=False))
-        print(f"Número de vagas para {company_name} em {location}: {vacancyNum}") """ 
-    
-       
-    
 
 @app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
 def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da empresa')):
