@@ -5,7 +5,7 @@ import requests
 import typer
 import re
 import json
-# from auxFunctions import countVacancies
+#from auxFunctions import countVacancies
 
 app = typer.Typer()
 
@@ -19,7 +19,7 @@ def calc_salary(data_list,job_id):
         # Itera sobre cada item da lista de dados
         for data in data_list:
 
-            if data.get('id', '') == job_id:  # testa com o job_id dado pelo utilizador
+            if data.get('id', '') == int(job_id):  # testa com o job_id dado pelo utilizador
 
                 if data.get('wage', ''):  # se 'wage' diferente de NULL
                     # print('€', data.get('wage', ''))
@@ -164,7 +164,7 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
                                   limit=1, page=1, search=None)['total']
         # lista com todos os resultados da página
         data_list = import_data('https://api.itjobs.pt/',
-                                path='job/list.json', limit=100, total_data=10, search=None)
+                                path='job/list.json', limit=100, total_data=total_data, search=None)
 
         jobs = []
         csv_jobs = []
@@ -186,7 +186,7 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
                     csv_jobs.append(dict_csv(data))
 
         # Exporta os resultados para um CSV
-        export_csv("locality", csv_jobs)
+        export_csv("company", csv_jobs)
 
         if jobs:
             print(jobs)
@@ -208,7 +208,7 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
                                   limit=1, page=1, search=None)['total']
         # lista com todos os resultados da página
         data_list = import_data('https://api.itjobs.pt/',
-                                path='job/list.json', limit=100, total_data=10, search=None)
+                                path='job/list.json', limit=100, total_data=total_data, search=None)
 
         jobs = []
         csv_jobs = []
@@ -228,7 +228,8 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
                         fr'\b{district}\b', local['name'], re.IGNORECASE)
 
                     if match:  # se encontrar o nome da companhia
-                        jobs.append(data.get('title', ''))
+                        if data.get('title','') not in jobs:
+                            jobs.append(data.get('title', ''))
                         csv_jobs.append(dict_csv(data))
 
         # Exporta os resultados para um CSV
@@ -256,7 +257,7 @@ def salary(job_id: int = typer.Argument('Número inteiro', help='ID da vaga para
     data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100,
                                 total_data=total_data, search=None)  # lista com todos os resultados da página
 
-    print(calc_salary(data_list,job_id))
+    print(calc_salary(data_list,int(job_id)))
 
 
 @app.command(help='Mostrar quais os trabalhos que requerem uma determinada lista de skills, num determinado período de tempo')
