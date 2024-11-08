@@ -10,17 +10,11 @@ import json
 app = typer.Typer()
 
 
-def calc_salary(job_id):
+def calc_salary(data_list,job_id):
     # palavras que geralmente aparecem juntamente com o salário
     search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*']
 
     try:
-
-        total_data = request_data('https://api.itjobs.pt/', path='job/search.json',
-                                  # num dados que existem
-                                  search=None, limit=1, page=1)['total']
-        data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100,
-                                total_data=total_data, search=None)  # lista com todos os resultados da página
 
         # Itera sobre cada item da lista de dados
         for data in data_list:
@@ -42,9 +36,9 @@ def calc_salary(job_id):
                         return match.group(0)
 
                     match = re.search(
-                        fr'[^.<>!?;^|]*?\b[rR]emunera[çct][ion|ions|õe|ão][s]**\b[^.<>]*?(?=[.<;:!?^|])', data.get('body', ''))
+                        fr'[^.<>!?;^|]*?\b[rR]emunera[çct][ion|ions|ões|ão]*\b[^.<>]*?(?=[.<;:!?^|])', data.get('body', ''))
                     if match:
-                        print(match.group(0))
+                        #print(match.group(0))
                         return match.group(0)
 
                 # print('Nenhum dado sobre salário encontrado')
@@ -256,7 +250,13 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
 @app.command(help="Pesquisar salário de uma vaga de emprego específica")
 def salary(job_id: int = typer.Argument('Número inteiro', help='ID da vaga para pesquisa de salários.')):
 
-    print(calc_salary(job_id))
+    total_data = request_data('https://api.itjobs.pt/', path='job/search.json',
+                                  # num dados que existem
+                                search=None, limit=1, page=1)['total']
+    data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100,
+                                total_data=total_data, search=None)  # lista com todos os resultados da página
+
+    print(calc_salary(data_list,job_id))
 
 
 @app.command(help='Mostrar quais os trabalhos que requerem uma determinada lista de skills, num determinado período de tempo')
@@ -437,7 +437,7 @@ def dict_csv(data):
         "Empresa": data["company"]["name"],
         "Descrição": description,
         "Data de Publicação": update_date,
-        "Salário": calc_salary(data["id"]),
+        "Salário": calc_salary([data],data["id"]),
         "Localização": locations,
     }
 
