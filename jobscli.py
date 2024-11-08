@@ -1,11 +1,8 @@
-from numpy import int32
 from datasets import import_data, export_csv, request_data
 from datetime import datetime
-from typing import Optional
-import requests
 import typer
 import re
-import json
+
 
 app = typer.Typer()
 
@@ -233,6 +230,7 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
                 nome_arquivo = input(
                     "Digite o nome do arquivo (sem a extensão .csv): ")
                 export_csv(nome_arquivo, csv_jobs)
+                print(f"Pesquisa salva em {nome_arquivo}.csv")
 
             return jobs
 
@@ -287,6 +285,7 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
                 nome_arquivo = input(
                     "Digite o nome do arquivo (sem a extensão .csv): ")
                 export_csv(nome_arquivo, csv_jobs)
+                print(f"Pesquisa salva em {nome_arquivo}.csv")
 
             return jobs
 
@@ -434,13 +433,14 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
             for chave, valor in list_jobs.items():
                 print(f"'\033[1;32m{chave}\033[0m': {valor}")
 
-        # Pergunta ao usuário se deseja salvar a pesquisa
-        salvar_pesquisa = input(
-            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
-        if salvar_pesquisa == 's':
-            nome_arquivo = input(
-                "Digite o nome do arquivo (sem a extensão .csv): ")
-            export_csv(nome_arquivo, csv_jobs)
+            # Pergunta ao usuário se deseja salvar a pesquisa
+            salvar_pesquisa = input(
+                "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+            if salvar_pesquisa == 's':
+                nome_arquivo = input(
+                    "Digite o nome do arquivo (sem a extensão .csv): ")
+                export_csv(nome_arquivo, csv_jobs)
+                print(f"Pesquisa salva em {nome_arquivo}.csv")
 
     except Exception as e:
         print(f'Erro: {e}')
