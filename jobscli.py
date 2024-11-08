@@ -1,16 +1,16 @@
 from numpy import int32
 from datasets import import_data, export_csv, request_data
 from datetime import datetime
+from typing import Optional
 import requests
 import typer
 import re
 import json
-#from auxFunctions import countVacancies
 
 app = typer.Typer()
 
 
-def calc_salary(data_list,job_id):
+def calc_salary(data_list, job_id):
     # palavras que geralmente aparecem juntamente com o salário
     search_salary = ['([e|E]xtra[s]*)*', '[cC]ompetitiv[oe]*']
 
@@ -38,7 +38,7 @@ def calc_salary(data_list,job_id):
                     match = re.search(
                         fr'[^.<>!?;^|]*?\b[rR]emunera[çct][ion|ions|ões|ão]*\b[^.<>]*?(?=[.<;:!?^|])', data.get('body', ''))
                     if match:
-                        #print(match.group(0))
+                        # print(match.group(0))
                         return match.group(0)
 
                 # print('Nenhum dado sobre salário encontrado')
@@ -55,22 +55,24 @@ def calc_salary(data_list,job_id):
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
 def top(n: int = typer.Argument('número de vagas')):
-   
-    #Lista os N trabalhos mais recentes publicados pela itjobs.pt
-    
+
+    # Lista os N trabalhos mais recentes publicados pela itjobs.pt
+
     try:
         datasets = import_data("https://api.itjobs.pt/",
-                               "job/list.json", search= None, limit= 100, total_data= n)
+                               "job/list.json", search=None, limit=100, total_data=n)
 
         jobs = []
         for vaga in datasets:
-            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")) if vaga.get("body") else "Não disponível"
-            descricao = body[:5000] + '...' if len(body) > 5000 else body  
-            
+            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")
+                          ) if vaga.get("body") else "Não disponível"
+            descricao = body[:5000] + '...' if len(body) > 5000 else body
+
             DictVagas = {
                 "Título": vaga.get("title"),
                 "Empresa": vaga.get("company", {}).get("name"),
-                "Descrição": descricao, #vaga.get("body")[:150] + '...' if vaga.get("body") else "Não disponível",
+                # vaga.get("body")[:150] + '...' if vaga.get("body") else "Não disponível",
+                "Descrição": descricao,
                 "Data de Publicação": vaga.get("publishedAt"),
                 "Salário": vaga.get("wage") if vaga.get("wage") else "Não informado",
                 "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
@@ -81,15 +83,18 @@ def top(n: int = typer.Argument('número de vagas')):
             print(f"\033[1;35mTítulo:\033[0m {vaga['Título']}")
             print(f"\033[1;35mEmpresa:\033[0m {vaga['Empresa']}")
             print(f"\033[1;35mDescrição:\033[0m {vaga['Descrição']}")
-            print(f"\033[1;35mData de Publicação:\033[0m {vaga['Data de Publicação']}")
+            print(f"\033[1;35mData de Publicação:\033[0m {
+                  vaga['Data de Publicação']}")
             print(f"\033[1;35mSalário:\033[0m {vaga['Salário']}")
             print(f"\033[1;35mLocalização:\033[0m {vaga['Localização']}\n")
             print("-" * 80)
 
         # Pergunta ao usuário se deseja salvar a pesquisa
-        salvar_pesquisa = input("Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+        salvar_pesquisa = input(
+            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
         if salvar_pesquisa == 's':
-            nome_arquivo = input("Digite o nome do arquivo (sem a extensão .csv): ")
+            nome_arquivo = input(
+                "Digite o nome do arquivo (sem a extensão .csv): ")
             export_csv(nome_arquivo, jobs)
             print(f"Pesquisa salva em {nome_arquivo}.csv")
         # Retornando as vagas formatadas como dicionário
@@ -98,7 +103,6 @@ def top(n: int = typer.Argument('número de vagas')):
     except Exception as e:
         print(f"Erro: {e}")
 
-      
 
 @app.command(help='Selecionar todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
 def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
@@ -106,9 +110,10 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
         if not isinstance(n, int):
             print("Erro: o número de vagas deve ser um valor inteiro.")
             return
-        
+
         # Procura pelo ID da localização
-        findLocal = request_data('https://api.itjobs.pt/', path='location/list.json', search=None, limit=100, page=1)['results']
+        findLocal = request_data(
+            'https://api.itjobs.pt/', path='location/list.json', search=None, limit=100, page=1)['results']
         idLocal = None
         for local in findLocal:
             if location == local['name']:
@@ -120,8 +125,10 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             return
 
         # Procura pelo ID da empresa
-        companys = request_data('https://api.itjobs.pt/', path='company/search.json', search=None, limit=1, page=1)['total']
-        findCompany = import_data('https://api.itjobs.pt/', path='company/search.json', search=None, limit=100, total_data=companys)
+        companys = request_data(
+            'https://api.itjobs.pt/', path='company/search.json', search=None, limit=1, page=1)['total']
+        findCompany = import_data(
+            'https://api.itjobs.pt/', path='company/search.json', search=None, limit=100, total_data=companys)
         idCompany = None
         for company in findCompany:
             if company_name == company['name']:
@@ -133,14 +140,16 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             return
 
         # Busca as vagas de emprego
-        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={idLocal}&company={idCompany}&type=1', limit=n, total_data=n)
+        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={
+                               idLocal}&company={idCompany}&type=1', limit=n, total_data=n)
 
         # Limita as vagas de acordo com o número solicitado
         jobs = []
         for vaga in datasets[:n]:
-            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")) if vaga.get("body") else "Não disponível"
-            descricao = body[:5000] + '...' if len(body) > 5000 else body  
-            
+            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")
+                          ) if vaga.get("body") else "Não disponível"
+            descricao = body[:5000] + '...' if len(body) > 5000 else body
+
             DictVagas = {
                 "Título": vaga.get("title"),
                 "Empresa": vaga.get("company", {}).get("name"),
@@ -156,15 +165,18 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             print(f"\033[1;32mTítulo:\033[0m {vaga['Título']}")
             print(f"\033[1;32mEmpresa:\033[0m {vaga['Empresa']}")
             print(f"\033[1;32mDescrição:\033[0m {vaga['Descrição']}")
-            print(f"\033[1;32mData de Publicação:\033[0m {vaga['Data de Publicação']}")
+            print(f"\033[1;32mData de Publicação:\033[0m {
+                  vaga['Data de Publicação']}")
             print(f"\033[1;32mSalário:\033[0m {vaga['Salário']}")
             print(f"\033[1;32mLocalização:\033[0m {vaga['Localização']}\n")
             print("-" * 80)
-            
+
         # Pergunta ao usuário se deseja salvar a pesquisa
-        salvar_pesquisa = input("Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+        salvar_pesquisa = input(
+            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
         if salvar_pesquisa == 's':
-            nome_arquivo = input("Digite o nome do arquivo (sem a extensão .csv): ")
+            nome_arquivo = input(
+                "Digite o nome do arquivo (sem a extensão .csv): ")
             export_csv(nome_arquivo, jobs)
             print(f"Pesquisa salva em {nome_arquivo}.csv")
 
@@ -172,10 +184,10 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
 
     except ValueError as ve:
         print(f"Erro de Valor: {ve}")
-        
+
     except Exception as e:
         print(f"Erro: {e}")
-        
+
 
 @app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
 def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da empresa')):
@@ -212,6 +224,16 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
 
         if jobs:
             print(jobs)
+
+            # Pergunta ao usuário se deseja salvar a pesquisa
+            salvar_pesquisa = input(
+                "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+
+            if salvar_pesquisa == 's':
+                nome_arquivo = input(
+                    "Digite o nome do arquivo (sem a extensão .csv): ")
+                export_csv(nome_arquivo, csv_jobs)
+
             return jobs
 
         print(f'Nenhuma vaga encontrada da empresa {company_name}')
@@ -250,15 +272,22 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
                         fr'\b{district}\b', local['name'], re.IGNORECASE)
 
                     if match:  # se encontrar o nome da companhia
-                        if data.get('title','') not in jobs:
+                        if data.get('title', '') not in jobs:
                             jobs.append(data.get('title', ''))
                         csv_jobs.append(dict_csv(data))
 
-        # Exporta os resultados para um CSV
-        export_csv("locality", csv_jobs)
-
         if jobs:
             print(jobs)
+
+            # Pergunta ao usuário se deseja salvar a pesquisa
+            salvar_pesquisa = input(
+                "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+
+            if salvar_pesquisa == 's':
+                nome_arquivo = input(
+                    "Digite o nome do arquivo (sem a extensão .csv): ")
+                export_csv(nome_arquivo, csv_jobs)
+
             return jobs
 
         # se a lista dos jobs estiver vazia
@@ -274,12 +303,12 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
 def salary(job_id: int = typer.Argument('Número inteiro', help='ID da vaga para pesquisa de salários.')):
 
     total_data = request_data('https://api.itjobs.pt/', path='job/search.json',
-                                  # num dados que existem
-                                search=None, limit=1, page=1)['total']
+                              # num dados que existem
+                              search=None, limit=1, page=1)['total']
     data_list = import_data('https://api.itjobs.pt/', path='job/list.json', limit=100,
-                                total_data=total_data, search=None)  # lista com todos os resultados da página
+                            total_data=total_data, search=None)  # lista com todos os resultados da página
 
-    print(calc_salary(data_list,int(job_id)))
+    print(calc_salary(data_list, int(job_id)))
 
 
 @app.command(help='Mostrar quais os trabalhos que requerem uma determinada lista de skills, num determinado período de tempo')
@@ -358,7 +387,7 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
                                'job/list.json', search=None, limit=100, total_data=int(total_data))
 
         # Inicialização do processo de captura das empresas que requerem as skills naquele período
-        list_jobs = []
+        list_jobs = {}
         csv_jobs = []
 
         for data in datasets:
@@ -387,37 +416,31 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
                     id_job = data["id"]
 
                     # Verifica se a empresa já existe na lista
-                    for job in list_jobs:
-                        if job["Empresa"] == company:
-                            job["Id_job"].append(id_job)
-                            break
 
-                    if all_skills_found:
-                        company = data["company"]["name"]
-                        id_job = data["id"]
+                    if company in list_jobs:
+                        list_jobs[company].append(id_job)
 
-                        # Verifica se a empresa já existe na lista
-                        for job in list_jobs:
-                            if job["Empresa"] == company:
-                                job["Id_job"].append(id_job)
-                                break
-                        # Se não existir adiciona o dicionario respetivo daquela empresa
-                        else:
-                            job_info = {
-                                "Empresa": company,
-                                "Id_job": [id_job],
-                            }
-                            list_jobs.append(job_info)
+                    # Se não existir adiciona o dicionario respetivo daquela empresa
+                    else:
+                        list_jobs[company] = [id_job]
 
-                        csv_jobs.append(dict_csv(data))
-
-        # Exporta os resultados para um CSV
-        export_csv("skills", csv_jobs)
+                    # Formatar o dicionário para exportar para CSV
+                    csv_jobs.append(dict_csv(data))
 
         if not list_jobs:
-            print("Nenhuma empresa encontrada que requer a skill.")
+            print("Nenhuma empresa encontrada que requer a(s) skill(s).")
         else:
-            print(list_jobs)
+            # Imprimindo as chaves em azul e os valores em verde
+            for chave, valor in list_jobs.items():
+                print(f"'\033[1;32m{chave}\033[0m': {valor}")
+
+        # Pergunta ao usuário se deseja salvar a pesquisa
+        salvar_pesquisa = input(
+            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+        if salvar_pesquisa == 's':
+            nome_arquivo = input(
+                "Digite o nome do arquivo (sem a extensão .csv): ")
+            export_csv(nome_arquivo, csv_jobs)
 
     except Exception as e:
         print(f'Erro: {e}')
@@ -460,7 +483,7 @@ def dict_csv(data):
         "Empresa": data["company"]["name"],
         "Descrição": description,
         "Data de Publicação": update_date,
-        "Salário": calc_salary([data],data["id"]),
+        "Salário": calc_salary([data], data["id"]),
         "Localização": locations,
     }
 
@@ -470,11 +493,11 @@ def dict_csv(data):
 def processing_data(date):
 
     match = re.match(
-        r"((0[1-9]|[12][0-9]|3[01])[-:/ ](0[13578]|1[02])[-:/ ]2024)|"
+        r"((0[1-9]|[12][0-9]|3[01])[-:/ ](0[13578]|1[02])[-:/ ](202[3-4]))|"
 
-        r"((0[1-9]|[12][0-9]|30)[-:/ ](0[469]|11)[-:/ ]2024)|"
+        r"((0[1-9]|[12][0-9]|30)[-:/ ](0[469]|11)[-:/ ](202[3-4]))|"
 
-        r"((0[1-9]|[12][0-9])[-:/ ](02)[-:/ ]2024)", date)
+        r"((0[1-9]|[12][0-9])[-:/ ](02)[-:/ ](202[3-4]))", date)
 
     if match:
         date = re.split(r"[-:/ ]", date)
@@ -485,11 +508,11 @@ def processing_data(date):
 
     else:
         match2 = re.match(
-            r"(2024[-:/ ](0[13578]|1[02])[-:/ ](0[1-9]|[12][0-9]|3[01]))|"
+            r"((202[3-4])[-:/ ](0[13578]|1[02])[-:/ ](0[1-9]|[12][0-9]|3[01]))|"
 
-            r"(2024[-:/ ](0[469]|11)[-:/ ](0[1-9]|[12][0-9]|30))|"
+            r"((202[3-4])[-:/ ](0[469]|11)[-:/ ](0[1-9]|[12][0-9]|30))|"
 
-            r"(2024[-:/ ](02)[-:/ ](0[1-9]|[12][0-9]))", date)
+            r"((202[3-4])[-:/ ](02)[-:/ ](0[1-9]|[12][0-9]))", date)
 
         if match2:
             date = re.split(r"[-:/ ]", date)
