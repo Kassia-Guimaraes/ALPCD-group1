@@ -2,10 +2,10 @@ from datasets import import_data, export_csv, request_data
 from datetime import datetime
 import typer
 import re
-
+import json
+from auxFunctions import showVacancies, askUser
 
 app = typer.Typer()
-
 
 def calc_salary(data_list, job_id):
     # palavras que geralmente aparecem juntamente com o salário
@@ -60,40 +60,16 @@ def top(n: int = typer.Argument('número de vagas')):
                                "job/list.json", search=None, limit=100, total_data=n)
 
         jobs = []
-        for vaga in datasets:
-            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")
-                          ) if vaga.get("body") else "Não disponível"
-            descricao = body[:5000] + '...' if len(body) > 5000 else body
 
-            DictVagas = {
-                "Título": vaga.get("title"),
-                "Empresa": vaga.get("company", {}).get("name"),
-                # vaga.get("body")[:150] + '...' if vaga.get("body") else "Não disponível",
-                "Descrição": descricao,
-                "Data de Publicação": vaga.get("publishedAt"),
-                "Salário": vaga.get("wage") if vaga.get("wage") else "Não informado",
-                "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
-            }
-            jobs.append(DictVagas)
-
-        for vaga in jobs:
-            print(f"\033[1;35mTítulo:\033[0m {vaga['Título']}")
-            print(f"\033[1;35mEmpresa:\033[0m {vaga['Empresa']}")
-            print(f"\033[1;35mDescrição:\033[0m {vaga['Descrição']}")
-            print(f"\033[1;35mData de Publicação:\033[0m {
-                  vaga['Data de Publicação']}")
-            print(f"\033[1;35mSalário:\033[0m {vaga['Salário']}")
-            print(f"\033[1;35mLocalização:\033[0m {vaga['Localização']}\n")
-            print("-" * 80)
+        for vacancy in datasets:
+            jobs.append(dict_csv(vacancy))
+            
+        # Mostra as vagas formatadas
+        showVacancies(jobs, 35)
 
         # Pergunta ao usuário se deseja salvar a pesquisa
-        salvar_pesquisa = input(
-            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
-        if salvar_pesquisa == 's':
-            nome_arquivo = input(
-                "Digite o nome do arquivo (sem a extensão .csv): ")
-            export_csv(nome_arquivo, jobs)
-            print(f"Pesquisa salva em {nome_arquivo}.csv")
+        askUser(jobs)
+            
         # Retornando as vagas formatadas como dicionário
         return jobs
 
@@ -122,10 +98,10 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             return
 
         # Procura pelo ID da empresa
-        companys = request_data(
-            'https://api.itjobs.pt/', path='company/search.json', search=None, limit=1, page=1)['total']
-        findCompany = import_data(
-            'https://api.itjobs.pt/', path='company/search.json', search=None, limit=100, total_data=companys)
+
+        companys = request_data('https://api.itjobs.pt/', path='company/search.json', search=None, limit=1, page=1)['total']
+        findCompany = import_data('https://api.itjobs.pt/', path='company/search.json', search=None, limit=100, total_data= companys)
+
         idCompany = None
         for company in findCompany:
             if company_name == company['name']:
@@ -142,42 +118,18 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
 
         # Limita as vagas de acordo com o número solicitado
         jobs = []
-        for vaga in datasets[:n]:
-            body = re.sub(r"<[^>]+>", "", vaga.get("body", "")
-                          ) if vaga.get("body") else "Não disponível"
-            descricao = body[:5000] + '...' if len(body) > 5000 else body
 
-            DictVagas = {
-                "Título": vaga.get("title"),
-                "Empresa": vaga.get("company", {}).get("name"),
-                "Descrição": descricao,
-                "Data de Publicação": vaga.get("publishedAt"),
-                "Salário": vaga.get("wage") if vaga.get("wage") else "Não informado",
-                "Localização": ", ".join([loc["name"] for loc in vaga.get("locations", [])])
-            }
-            jobs.append(DictVagas)
+        for vacancy in datasets[:n]:             
+            jobs.append(dict_csv(vacancy))
 
         # Exibe as vagas formatadas
-        for vaga in jobs:
-            print(f"\033[1;32mTítulo:\033[0m {vaga['Título']}")
-            print(f"\033[1;32mEmpresa:\033[0m {vaga['Empresa']}")
-            print(f"\033[1;32mDescrição:\033[0m {vaga['Descrição']}")
-            print(f"\033[1;32mData de Publicação:\033[0m {
-                  vaga['Data de Publicação']}")
-            print(f"\033[1;32mSalário:\033[0m {vaga['Salário']}")
-            print(f"\033[1;32mLocalização:\033[0m {vaga['Localização']}\n")
-            print("-" * 80)
+        showVacancies(jobs, 32)
+        
+        #Pergunta ao usuário se deseja salvar a pesquisa realizada
+        askUser(jobs)
+        
+        return jobs  
 
-        # Pergunta ao usuário se deseja salvar a pesquisa
-        salvar_pesquisa = input(
-            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
-        if salvar_pesquisa == 's':
-            nome_arquivo = input(
-                "Digite o nome do arquivo (sem a extensão .csv): ")
-            export_csv(nome_arquivo, jobs)
-            print(f"Pesquisa salva em {nome_arquivo}.csv")
-
-        return jobs
 
     except ValueError as ve:
         print(f"Erro de Valor: {ve}")
