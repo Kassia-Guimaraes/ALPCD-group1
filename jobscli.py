@@ -260,7 +260,7 @@ def salary(job_id: int = typer.Argument('Número inteiro', help='ID da vaga para
 
 
 @app.command(help='Mostrar quais os trabalhos que requerem uma determinada lista de skills, num determinado período de tempo')
-def skills(skills: list[str] = typer.Argument(help='Lista com as skills que deseja pesquisar'), start_date: str = typer.Argument('dd-mm-aaaa', help='Data inicial da pesquisa'), end_date: str = typer.Argument('dd-mm-aaaa', help='Data final da pesquisa')):
+def skills(skills: list[str] = typer.Argument(help='Skills que deseja pesquisar, apenas separadas por vírgulas'), start_date: str = typer.Argument('dd-mm-aaaa', help='Data inicial da pesquisa'), end_date: str = typer.Argument('dd-mm-aaaa', help='Data final da pesquisa')):
     try:
         # Lista de skills possiveis
         list_skills = [
@@ -285,10 +285,10 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
             "terraform", "ansible", "jenkins", "git", "ci/cd",
 
             # Ciência de Dados e Machine Learning
-            "data science", "tensorflow",
+            "data science", "data analyst", "tensorflow",
             "pytorch", "pandas", "numpy", "r", "matplotlib",
             "scikit-learn", "keras", "statistics", "ciência de dados",
-            "estatística",
+            "estatística", "databases", "bases de dados",
 
             # Metodologias e Ferramentas
             "agile", "scrum", "kanban", "devops", "github", "bitbucket",
@@ -300,16 +300,20 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
             # Outras Skills Relevantes
             "blockchain", "iot", "ar/vr", "ui/ux", "seo",
             "api", "development", "graphql", "performance",
+            "analytics projects", "excel",
 
             # Soft Skills
             "communication", "comunicação", "teamwork",
             "adaptability", "leadership", "trabalho em equipa",
+            "espirito critico", "proatividade", "espirito de equipa",
+            "criatividade",
 
             # Linguas
             "inglês", "françes", "espanhol", "português", "english",
 
             # Licenciaturas
-            "engenharia informática", "ciência de dados"
+            "engenharia informática", "ciência de dados", "data engineer",
+            "software engineer", "engenharia de software"
         ]
 
         # Tratamento das skills
@@ -392,6 +396,75 @@ def skills(skills: list[str] = typer.Argument(help='Lista com as skills que dese
                 print(f"Pesquisa salva em {nome_arquivo}.csv")
 
     except Exception as e:
+        print(f'Erro: {e}')
+        return e
+
+
+@app.command(help='Mostrar quais os trabalhos de uma detreminada localidade, que oferecem um determinado contrato')
+def contract(locality: str = typer.Argument(help='Nome do distrito'), contract: str = typer.Argument(help='Tipo de contrato que deseja pesquisar')):
+
+    try:
+        # Procura pelo ID da localização
+        total_local = request_data('https://api.itjobs.pt/', path='location/list.json',
+                                   search=None, limit=100, page=1)['results']
+        id_local = None
+
+        for local in total_local:
+            if re.search(rf"\b{locality}\b", local["name"], re.IGNORECASE):
+                id_local = local['id']
+                break
+
+        if not id_local:
+            print(f"Localização '{locality}' não encontrada.")
+            return
+
+        dict_contracts = {
+            "estágio académico": int(5),
+            "prestação de serviços": int(4),
+            "estágio profissional": int(3),
+            "contrato sem termo": int(2),
+            "contrato a termo": int(1)
+        }
+
+        if contract.lower() in dict_contracts:
+            id_contract = dict_contracts[contract]
+        else:
+            print(f"{contract} não identificado como contrato.")
+
+        # Busca as vagas de emprego
+        num_datasets = request_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={
+            id_local}&contract={id_contract}', limit=1, page=1)["total"]
+
+        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={
+                               id_local}&contract={id_contract}', limit=100, total_data=int(num_datasets))
+
+        csv_jobs = []
+
+        for data in datasets:
+            data = dict_csv(data)
+            print(f"\033[1;35mTítulo:\033[0m {data['Título']}")
+            print(f"\033[1;35mEmpresa:\033[0m {data['Empresa']}")
+            print(f"\033[1;35mData de Publicação:\033[0m {
+                  data['Data de Publicação']}")
+            print("-" * 80)
+
+            csv_jobs.append(data)
+
+        # Pergunta ao usuário se deseja salvar a pesquisa
+        salvar_pesquisa = input(
+            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+
+        if salvar_pesquisa == 's':
+            nome_arquivo = input(
+                "Digite o nome do arquivo (sem a extensão .csv): ")
+
+            export_csv(nome_arquivo, csv_jobs)
+            print(f"Pesquisa salva em {nome_arquivo}.csv")
+
+    except Exception as e:
+        if str(e) == "'results'":
+            print("Sem publicações com essas características!")
+            return
         print(f'Erro: {e}')
         return e
 
