@@ -56,8 +56,7 @@ def top(n: int = typer.Argument('número de vagas')):
     # Lista os N trabalhos mais recentes publicados pela itjobs.pt
 
     try:
-        datasets = import_data("https://api.itjobs.pt/",
-                               "job/list.json", search=None, limit=100, total_data=n)
+        datasets = import_data("https://api.itjobs.pt/", "job/list.json", search= None, limit= 100, total_data= n)
 
         jobs = []
 
@@ -85,8 +84,7 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             return
 
         # Procura pelo ID da localização
-        findLocal = request_data(
-            'https://api.itjobs.pt/', path='location/list.json', search=None, limit=100, page=1)['results']
+        findLocal = request_data('https://api.itjobs.pt/', path='location/list.json', search=None, limit=100, page=1)['results']
         idLocal = None
         for local in findLocal:
             if location == local['name']:
@@ -113,8 +111,7 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             return
 
         # Busca as vagas de emprego
-        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={
-                               idLocal}&company={idCompany}&type=1', limit=n, total_data=n)
+        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={idLocal}&company={idCompany}&type=1', limit=n, total_data=n)
 
         # Limita as vagas de acordo com o número solicitado
         jobs = []
@@ -474,6 +471,8 @@ def processing_data(date):
             return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
         else:
             return None
+
+
 
 
 if __name__ == "__main__":

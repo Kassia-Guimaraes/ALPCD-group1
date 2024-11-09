@@ -1,5 +1,5 @@
-
 from datasets import export_csv
+
 # Funções Auxiliares
 
 
@@ -22,3 +22,4 @@ def askUser(jobs):
         export_csv(fileName, jobs) 
         print(f"Pesquisa salva em {fileName}.csv")
         
+
