@@ -5,8 +5,7 @@ import csv
 
 def request_data(header, path, search, limit, page):  # faz o import dos dados da página web
 
-    url = f"{header}{path}?api_key={secret}&limit={
-        limit}&page={page}{search}"  # search caminho para
+    url = f"{header}{path}?api_key={secret}&limit={limit}&page={page}{search}"  # search caminho para
 
     headers = {'User-agent': 'group1-ALPCD'}
     payload = {}
@@ -19,6 +18,7 @@ def request_data(header, path, search, limit, page):  # faz o import dos dados d
         else:
             print(f"Erro {response.status_code} - {response.text}")
             return None
+        
     except requests.exceptions.RequestException as e:
         print(f"Erro na requisição: {e}")
         return None

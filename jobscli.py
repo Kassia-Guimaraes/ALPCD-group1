@@ -3,7 +3,7 @@ from datetime import datetime
 import typer
 import re
 import json
-from auxFunctions import showVacancies, askUser
+from auxFunctions import showVacancies, askUser, findZone
 
 app = typer.Typer()
 
@@ -56,8 +56,7 @@ def top(n: int = typer.Argument('número de vagas')):
     # Lista os N trabalhos mais recentes publicados pela itjobs.pt
 
     try:
-        datasets = import_data("https://api.itjobs.pt/",
-                               "job/list.json", search=None, limit=100, total_data=n)
+        datasets = import_data("https://api.itjobs.pt/", "job/list.json", search= None, limit= 100, total_data= n)
 
         jobs = []
 
@@ -85,8 +84,7 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             return
 
         # Procura pelo ID da localização
-        findLocal = request_data(
-            'https://api.itjobs.pt/', path='location/list.json', search=None, limit=100, page=1)['results']
+        findLocal = request_data('https://api.itjobs.pt/', path='location/list.json', search=None, limit=100, page=1)['results']
         idLocal = None
         for local in findLocal:
             if location == local['name']:
@@ -113,8 +111,7 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
             return
 
         # Busca as vagas de emprego
-        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={
-                               idLocal}&company={idCompany}&type=1', limit=n, total_data=n)
+        datasets = import_data('https://api.itjobs.pt/', path='job/list.json', search=f'&location={idLocal}&company={idCompany}&type=1', limit=n, total_data=n)
 
         # Limita as vagas de acordo com o número solicitado
         jobs = []
@@ -474,6 +471,28 @@ def processing_data(date):
             return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
         else:
             return None
+
+
+@app.command("search_role", help='Selecionar uma vaga específica que contenha uma palavra-chave no título, em uma determinada localidade')
+def search_role(zone: str, job_title: str):
+    try:
+        # Chama a função findZone para obter as vagas locais
+        local_jobs = findZone(zone)
+        
+        # Filtra as vagas de acordo com a palavra-chave no título
+        filtered_jobs = [dict_csv(job) for job in local_jobs if job_title.lower() in dict_csv(job)['Título'].lower()]
+        
+        if filtered_jobs:
+            print(f"Total de vagas encontradas: {len(filtered_jobs)}")
+            # Chama a função showVacancies para exibir as vagas filtradas
+            showVacancies(filtered_jobs, 34) 
+            askUser(filtered_jobs) 
+            
+        else:
+            print(f"Nenhuma vaga encontrada com o título '{job_title}' na localidade {zone}.")
+            
+    except Exception as e:
+        print(f"Erro: {e}")
 
 
 if __name__ == "__main__":
