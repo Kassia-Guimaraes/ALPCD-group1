@@ -213,7 +213,7 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
 
             try:  # se a pessoa adicionar o id da localidade
                 for local in data.get('locations', ''):
-                    if (data['locations']['id'] == int(district)):
+                    if (local['id'] == str(district)):
                         jobs.append(data.get('title', ''))
                         csv_jobs.append(dict_csv(data))
 
