@@ -1,6 +1,7 @@
 from top_secret import secret
 import requests
 import csv
+from bs4 import BeautifulSoup
 
 def request_data_by_id(header, path, id): #importa dados da pagina com id especifico
     
@@ -42,22 +43,22 @@ def request_data(header, path, search, limit, page):  # faz o import dos dados d
         return None
 
 
-def request_html(header, path):
+def request_html(header, path): #
    
     if path:
         url = f'{header}{path}'
     else:
         url = f'{header}'
 
-    headers = { "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Fire-fox/98.0", 
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5", 
-                "Accept-Encoding": "gzip, deflate", 
-                "Connection": "keep-alive", 
-                "Upgrade-Insecure-Requests": "1", 
-                "Sec-Fetch-Dest": "document", 
-                "Sec-Fetch-Mode": "navigate", 
-                "Sec-Fetch-Site": "none", 
-                "Sec-Fetch-User": "?1", 
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:98.0) Gecko/20100101 Fire-fox/98.0", 
+               "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8", "Accept-Language": "en-US,en;q=0.5",
+               "Accept-Encoding": "gzip, deflate", 
+               "Connection": "keep-alive", 
+               "Upgrade-Insecure-Requests": "1", 
+               "Sec-Fetch-Dest": "document",
+               "Sec-Fetch-Mode": "navigate", 
+               "Sec-Fetch-Site": "none", 
+               "Sec-Fetch-User": "?1",
                 "Cache-Control": "max-age=0"}
     payload = {}
 
@@ -65,7 +66,8 @@ def request_html(header, path):
         response = requests.get(url, headers=headers)
 
         if response.status_code == 200:
-            return response.json()
+            soup = BeautifulSoup(response.text, "lxml")
+            return soup
         else:
             print(f"Erro {response.status_code} - {response.text}")
             return None
@@ -111,6 +113,3 @@ def export_csv(name, dict):
 
         for dic in dict:
             writer.writerow(dic)
-
-
-request_html("https://www.ambitionbox.com", path=None)
