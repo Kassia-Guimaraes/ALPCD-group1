@@ -43,7 +43,7 @@ def request_data(header, path, search, limit, page):  # faz o import dos dados d
         return None
 
 
-def request_html(header, path): #
+def request_html(header, path): #busca dados de uma página web
    
     if path:
         url = f'{header}{path}'
@@ -76,6 +76,7 @@ def request_html(header, path): #
         print(f"Erro na requisição: {e}")
         return None
 
+
 # retorna uma lista com todos os resultados
 def import_data(header, path, search, limit, total_data):
 
@@ -100,14 +101,11 @@ def import_data(header, path, search, limit, total_data):
         rest -= limit  # retira a quantidade do limite das páginas importadas
 
 
-def export_csv(name, dict):
+def export_csv(name, dicts, columns_name):
     with open(f"{name}.csv", 'w', newline='', encoding='utf-8') as csvfile:
 
-        colunas = ["Título", "Empresa", "Descrição", "Data de Publicação",
-                   "Salário", "Localização"]  # colunas do CSV
-
         # inicializar o DictWriter com os nomes das colunas
-        writer = csv.DictWriter(csvfile, fieldnames=colunas)
+        writer = csv.DictWriter(csvfile, fieldnames=columns_name)
 
         writer.writeheader()  # escrever o cabeçalho
 
