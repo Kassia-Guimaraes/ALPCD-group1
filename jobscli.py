@@ -196,9 +196,6 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
                     jobs.append(data.get('title', ''))
                     csv_jobs.append(dict_csv(data))
 
-        # Exporta os resultados para um CSV
-        export_csv("company", csv_jobs)
-
         if jobs:
             print(jobs)
 
