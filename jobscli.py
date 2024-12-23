@@ -69,7 +69,8 @@ def calc_salary(data_list, job_id):
 
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
-def top(n: int = typer.Argument('número de vagas')):
+def top(n: int = typer.Argument('número de vagas'),
+        export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
 
     # Lista os N trabalhos mais recentes publicados pela itjobs.pt
 
@@ -85,8 +86,10 @@ def top(n: int = typer.Argument('número de vagas')):
         # Mostra as vagas formatadas
         showVacancies(jobs, 35)
 
-        # Pergunta ao usuário se deseja salvar a pesquisa
-        askUser(jobs)
+        #Salvar para CSV
+        if export:
+            filename = f"top{n}"
+            export_csv(filename, jobs)
 
         # Retornando as vagas formatadas como dicionário
         return jobs
@@ -96,7 +99,10 @@ def top(n: int = typer.Argument('número de vagas')):
 
 
 @app.command(help='Selecionar todos os trabalhos do tipo full-time, publicados por uma determinada empresa, em uma determinada localidade')
-def search(location: str = typer.Argument('nome do distrito'), company_name: str = typer.Argument('nome da empresa'), n: int = typer.Argument('número de vagas')):
+def search(location: str = typer.Argument('nome do distrito'), 
+           company_name: str = typer.Argument('nome da empresa'), 
+           n: int = typer.Argument('número de vagas'),
+           export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     try:
         if not isinstance(n, int):
             print("Erro: o número de vagas deve ser um valor inteiro.")
@@ -145,8 +151,10 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
         # Exibe as vagas formatadas
         showVacancies(jobs, 32)
 
-        # Pergunta ao usuário se deseja salvar a pesquisa realizada
-        askUser(jobs)
+        #Salvar para CSV
+        if export:
+            filename = f"search"
+            export_csv(filename, jobs)
 
         return jobs
 
@@ -414,6 +422,40 @@ def skills(skills: list[str] = typer.Argument(help='Skills que deseja pesquisar,
         return e
 
 
+def processing_data(date):
+
+    match = re.match(
+        r"((0[1-9]|[12][0-9]|3[01])[-:/ ](0[13578]|1[02])[-:/ ](202[3-4]))|"
+
+        r"((0[1-9]|[12][0-9]|30)[-:/ ](0[469]|11)[-:/ ](202[3-4]))|"
+
+        r"((0[1-9]|[12][0-9])[-:/ ](02)[-:/ ](202[3-4]))", date)
+
+    if match:
+        date = re.split(r"[-:/ ]", date)
+        # Extrai os grupos correspondentes
+        day, month, year = date
+
+        return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
+
+    else:
+        match2 = re.match(
+            r"((202[3-4])[-:/ ](0[13578]|1[02])[-:/ ](0[1-9]|[12][0-9]|3[01]))|"
+
+            r"((202[3-4])[-:/ ](0[469]|11)[-:/ ](0[1-9]|[12][0-9]|30))|"
+
+            r"((202[3-4])[-:/ ](02)[-:/ ](0[1-9]|[12][0-9]))", date)
+
+        if match2:
+            date = re.split(r"[-:/ ]", date)
+            # Extrai os grupos correspondentes
+            year, month, day = date
+
+            return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
+        else:
+            return None
+
+
 @app.command(help='Mostrar quais os trabalhos de uma detreminada localidade, que oferecem um determinado contrato')
 def contract(locality: str = typer.Argument(help='Nome do distrito'),
              contract: str = typer.Argument(
@@ -517,42 +559,8 @@ def dict_csv(data):
     return csv_jobs_info
 
 
-def processing_data(date):
-
-    match = re.match(
-        r"((0[1-9]|[12][0-9]|3[01])[-:/ ](0[13578]|1[02])[-:/ ](202[3-4]))|"
-
-        r"((0[1-9]|[12][0-9]|30)[-:/ ](0[469]|11)[-:/ ](202[3-4]))|"
-
-        r"((0[1-9]|[12][0-9])[-:/ ](02)[-:/ ](202[3-4]))", date)
-
-    if match:
-        date = re.split(r"[-:/ ]", date)
-        # Extrai os grupos correspondentes
-        day, month, year = date
-
-        return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
-
-    else:
-        match2 = re.match(
-            r"((202[3-4])[-:/ ](0[13578]|1[02])[-:/ ](0[1-9]|[12][0-9]|3[01]))|"
-
-            r"((202[3-4])[-:/ ](0[469]|11)[-:/ ](0[1-9]|[12][0-9]|30))|"
-
-            r"((202[3-4])[-:/ ](02)[-:/ ](0[1-9]|[12][0-9]))", date)
-
-        if match2:
-            date = re.split(r"[-:/ ]", date)
-            # Extrai os grupos correspondentes
-            year, month, day = date
-
-            return datetime.strptime(f"{year}-{month}-{day}", "%Y-%m-%d")
-        else:
-            return None
-
-
 @app.command("search_role", help='Selecionar uma vaga específica que contenha uma palavra-chave no título, em uma determinada localidade')
-def search_role(zone: str, job_title: str):
+def search_role(zone: str, job_title: str, export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     try:
         # Chama a função findZone para obter as vagas locais
         local_jobs = findZone(zone)
@@ -565,7 +573,11 @@ def search_role(zone: str, job_title: str):
             print(f"Total de vagas encontradas: {len(filtered_jobs)}")
             # Chama a função showVacancies para exibir as vagas filtradas
             showVacancies(filtered_jobs, 34)
-            askUser(filtered_jobs)
+            
+            #Salvar para CSV
+            if export:
+                filename = f"search"
+                export_csv(filename, filtered_jobs)
 
         else:
             print(f"Nenhuma vaga encontrada com o título '{
