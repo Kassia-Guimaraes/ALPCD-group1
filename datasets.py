@@ -3,7 +3,25 @@ import requests
 import csv
 from bs4 import BeautifulSoup
 
+def request_data_by_id(header, path, id): #importa dados da pagina com id especifico
+    
+    url = f"{header}{path}?api_key={secret}&id={id}"  # search caminho para dados específicos
 
+    headers = {'User-agent': 'group1-ALPCD'}
+
+    try:
+        response = requests.get(url, headers=headers)
+
+        if response.status_code == 200:
+            return response.json()
+        else:
+            print(f"Erro {response.status_code} - {response.text}")
+            return None
+        
+    except requests.exceptions.RequestException as e:
+        print(f"Erro na requisição: {e}")
+        return None
+    
 def request_data(header, path, search, limit, page):  # faz o import dos dados da página web
 
     url = f"{header}{path}?api_key={secret}&limit={limit}&page={page}{search}"  # search caminho para dados específicos
