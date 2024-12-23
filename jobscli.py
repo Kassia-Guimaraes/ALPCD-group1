@@ -1,28 +1,11 @@
-from datasets import import_data, export_csv, request_data, request_data_by_id, request_html
+from datasets import import_data, export_csv, request_data
 from datetime import datetime
 import typer
 import re
 import json
 from auxFunctions import showVacancies, askUser, findZone
-import requests
-from bs4 import BeautifulSoup
 
 app = typer.Typer()
-
-
-@app.command(help="Procura o trabalho pelo ID da vaga")
-def fetch_job_details(job_id):
-    jobData = request_data_by_id(
-        "https://api.itjobs.pt/", "job/get.json", job_id)
-
-    print("Dados do Job:", jobData["company"]["name"])
-    company_name = jobData['company']['name']
-    company_path = company_name.replace(' ', '-')
-
-    # data= request_html('https://www.ambitionbox.com/overview/', f"{company_path}-overview")
-    data = request_html(
-        'https://www.ambitionbox.com/overview/', "capgemini-overview")
-    return data
 
 
 def calc_salary(data_list, job_id):
@@ -158,8 +141,7 @@ def search(location: str = typer.Argument('nome do distrito'), company_name: str
 
 
 @app.command(help='Encontrar todas as vagas disponíveis de uma empresa')
-def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da empresa'),
-            export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
+def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da empresa')):
 
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
@@ -194,10 +176,15 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
         if jobs:
             print(jobs)
 
-            # Salvar para CSV
-            if export:
-                filename = "company"
-                export_csv(filename, csv_jobs)
+            # Pergunta ao usuário se deseja salvar a pesquisa
+            salvar_pesquisa = input(
+                "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+
+            if salvar_pesquisa == 's':
+                nome_arquivo = input(
+                    "Digite o nome do arquivo (sem a extensão .csv): ")
+                export_csv(nome_arquivo, csv_jobs)
+                print(f"Pesquisa salva em {nome_arquivo}.csv")
 
             return jobs
 
@@ -209,8 +196,7 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
 
 
 @app.command(help='Buscar todas as vagas disponíveis por distrito')
-def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID da localidade que deseja pesquisar a vaga'),
-             export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
+def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID da localidade que deseja pesquisar a vaga')):
 
     try:
         total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
@@ -245,10 +231,15 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
         if jobs:
             print(jobs)
 
-            # Salvar para CSV
-            if export:
-                filename = "contract"
-                export_csv(filename, csv_jobs)
+            # Pergunta ao usuário se deseja salvar a pesquisa
+            salvar_pesquisa = input(
+                "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+
+            if salvar_pesquisa == 's':
+                nome_arquivo = input(
+                    "Digite o nome do arquivo (sem a extensão .csv): ")
+                export_csv(nome_arquivo, csv_jobs)
+                print(f"Pesquisa salva em {nome_arquivo}.csv")
 
             return jobs
 
@@ -274,11 +265,7 @@ def salary(job_id: int = typer.Argument('Número inteiro', help='ID da vaga para
 
 
 @app.command(help='Mostrar quais os trabalhos que requerem uma determinada lista de skills, num determinado período de tempo')
-def skills(skills: list[str] = typer.Argument(help='Skills que deseja pesquisar, apenas separadas por vírgulas'),
-           start_date: str = typer.Argument('dd-mm-aaaa', help='Data inicial da pesquisa'),
-           end_date: str = typer.Argument('dd-mm-aaaa', help='Data final da pesquisa'),
-           export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
-
+def skills(skills: list[str] = typer.Argument(help='Skills que deseja pesquisar, apenas separadas por vírgulas'), start_date: str = typer.Argument('dd-mm-aaaa', help='Data inicial da pesquisa'), end_date: str = typer.Argument('dd-mm-aaaa', help='Data final da pesquisa')):
     try:
         # Lista de skills possiveis
         list_skills = [
@@ -404,10 +391,14 @@ def skills(skills: list[str] = typer.Argument(help='Skills que deseja pesquisar,
             for chave, valor in list_jobs.items():
                 print(f"'\033[1;32m{chave}\033[0m': {valor}")
 
-            # Salvar para CSV
-            if export:
-                filename = "skills"
-                export_csv(filename, csv_jobs)
+            # Pergunta ao usuário se deseja salvar a pesquisa
+            salvar_pesquisa = input(
+                "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+            if salvar_pesquisa == 's':
+                nome_arquivo = input(
+                    "Digite o nome do arquivo (sem a extensão .csv): ")
+                export_csv(nome_arquivo, csv_jobs)
+                print(f"Pesquisa salva em {nome_arquivo}.csv")
 
     except Exception as e:
         print(f'Erro: {e}')
@@ -415,10 +406,7 @@ def skills(skills: list[str] = typer.Argument(help='Skills que deseja pesquisar,
 
 
 @app.command(help='Mostrar quais os trabalhos de uma detreminada localidade, que oferecem um determinado contrato')
-def contract(locality: str = typer.Argument(help='Nome do distrito'),
-             contract: str = typer.Argument(
-                 help='Tipo de contrato que deseja pesquisar'),
-             export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
+def contract(locality: str = typer.Argument(help='Nome do distrito'), contract: str = typer.Argument(help='Tipo de contrato que deseja pesquisar')):
 
     try:
         # Procura pelo ID da localização
@@ -467,10 +455,16 @@ def contract(locality: str = typer.Argument(help='Nome do distrito'),
 
             csv_jobs.append(data)
 
-        # Salvar para CSV
-            if export:
-                filename = "contract"
-                export_csv(filename, csv_jobs)
+        # Pergunta ao usuário se deseja salvar a pesquisa
+        salvar_pesquisa = input(
+            "Deseja salvar a pesquisa em um arquivo .csv? (s/n): ").lower()
+
+        if salvar_pesquisa == 's':
+            nome_arquivo = input(
+                "Digite o nome do arquivo (sem a extensão .csv): ")
+
+            export_csv(nome_arquivo, csv_jobs)
+            print(f"Pesquisa salva em {nome_arquivo}.csv")
 
     except Exception as e:
         if str(e) == "'results'":
