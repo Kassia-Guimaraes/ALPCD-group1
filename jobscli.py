@@ -255,7 +255,7 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
 
             # Salvar para CSV
             if export:
-                filename = "contract"
+                filename = "locality"
                 export_csv(filename, csv_jobs)
 
             return jobs
