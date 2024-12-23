@@ -196,9 +196,6 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
                     jobs.append(data.get('title', ''))
                     csv_jobs.append(dict_csv(data))
 
-        # Exporta os resultados para um CSV
-        export_csv("company", csv_jobs)
-
         if jobs:
             print(jobs)
 
@@ -255,7 +252,7 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
 
             # Salvar para CSV
             if export:
-                filename = "contract"
+                filename = "locality"
                 export_csv(filename, csv_jobs)
 
             return jobs
