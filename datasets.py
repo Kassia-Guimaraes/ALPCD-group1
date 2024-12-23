@@ -25,7 +25,7 @@ def request_data(header, path, search, limit, page):  # faz o import dos dados d
         return None
 
 
-def request_html(header, path): #
+def request_html(header, path): #busca dados de uma página web
    
     if path:
         url = f'{header}{path}'
@@ -57,6 +57,7 @@ def request_html(header, path): #
     except requests.exceptions.RequestException as e:
         print(f"Erro na requisição: {e}")
         return None
+
 
 # retorna uma lista com todos os resultados
 def import_data(header, path, search, limit, total_data):
