@@ -109,5 +109,5 @@ def export_csv(name, dicts, columns_name):
 
         writer.writeheader()  # escrever o cabeçalho
 
-        for dic in dict:
+        for dic in dicts:
             writer.writerow(dic)
