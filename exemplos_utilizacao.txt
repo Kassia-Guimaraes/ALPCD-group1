@@ -62,3 +62,9 @@ search_role(zone: str, job_title: str,
 
 python jobscli.py search_role Braga "Fullstack" -e
 
+
+
+
+statistics(zone: str = typer.Argument('Nome do distrito')):
+
+python jobs.py statistics Braga

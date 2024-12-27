@@ -1,9 +1,9 @@
 from requests import head
 from datasets import *
+from jobscli import *
 from data import skills
 import typer
 import re
-import json
 
 app = typer.Typer()
 
@@ -20,6 +20,46 @@ def fetch_job_details(job_id):
     return data
 
 
+@app.command(help= "Quantidade de vagas por zone")
+def statistics(zone: str = typer.Argument('Nome do distrito')):
+    ''' Cria um ficheiro .csv com a contagem de vagas por zona'''
+    try:
+        jobs, _ = jobs_per_locality(zone)
+
+        count_jobs = {}
+        
+        for job_title in jobs:
+            if job_title in count_jobs:
+                count_jobs[job_title] += 1
+            else:
+                count_jobs[job_title] = 1
+
+        csv_jobs = []
+
+        for job in list(count_jobs.keys()):
+            dict_jobs = {
+                'Zona': zone,
+                'Tipo de trabalho': job,
+                'Número de vagas': count_jobs[job]
+            }
+
+            csv_jobs.append(dict_jobs)
+
+        if csv_jobs:
+            export_csv(f'{zone}_count', csv_jobs, list(csv_jobs[1].keys()))
+            print('Ficheiro exportado com sucesso')
+
+            return csv_jobs
+
+        else:
+            print('Não foi possível criar um ficheiro')
+            return None
+    
+    except Exception as e:
+        print(f'Erro: {e}')
+        return e
+
+            
 @app.command(help= "Procura uma lista de skills de acordo com um certo trabalho")
 def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'), 
                 export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):

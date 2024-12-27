@@ -147,6 +147,46 @@ def dict_csv(data):
 
     return csv_jobs_info
 
+def jobs_per_locality(district):
+    try:
+        total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
+                                    # num dados que existem
+                                    limit=1, page=1, search=None)['total']
+        # lista com todos os resultados da página
+        data_list = import_data('https://api.itjobs.pt/',
+                                path='job/list.json', limit=100, total_data=total_data, search=None)
+
+        jobs = []
+        csv_jobs = []
+
+        for data in data_list:
+
+            try:  # se a pessoa adicionar o id da localidade
+                for local in data.get('locations', ''):
+                    if (local['id'] == int(district)):
+                        jobs.append(data.get('title', ''))
+                        csv_jobs.append(dict_csv(data))
+
+            except:
+                for local in data.get('locations', ''):
+                    # faz a busca sem considerar as letras maiúsculas e/ou minúsculas
+                    match = re.search(
+                        fr'\b{district}\b', local['name'], re.IGNORECASE)
+
+                    if match:  # se encontrar o nome da companhia
+                        jobs.append(data.get('title', ''))
+                        csv_jobs.append(dict_csv(data))
+
+        if jobs:
+            return jobs, csv_jobs
+
+        # se a lista dos jobs estiver vazia
+        print(f'Nenhuma vaga encontrada em {district}')
+        return jobs
+
+    except Exception as e:
+        print(f'Erro: {e}')
+        return e
 
 @app.command(help='Encontrar as publicações de emprego mais recentes')
 def top(n: int = typer.Argument(help='número de vagas'),
@@ -294,51 +334,14 @@ def company(company_name: str = typer.Argument('ID ou nome', help='Nome ou ID da
 def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID da localidade que deseja pesquisar a vaga'),
             export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
 
-    try:
-        total_data = request_data('https://api.itjobs.pt/', path='job/list.json',
-                                  # num dados que existem
-                                  limit=1, page=1, search=None)['total']
-        # lista com todos os resultados da página
-        data_list = import_data('https://api.itjobs.pt/',
-                                path='job/list.json', limit=100, total_data=total_data, search=None)
+    jobs, csv_jobs = jobs_per_locality(district)
 
-        jobs = []
-        csv_jobs = []
-
-        for data in data_list:
-
-            try:  # se a pessoa adicionar o id da localidade
-                for local in data.get('locations', ''):
-                    if (local['id'] == int(district)):
-                        jobs.append(data.get('title', ''))
-                        csv_jobs.append(dict_csv(data))
-
-            except:
-                for local in data.get('locations', ''):
-                    # faz a busca sem considerar as letras maiúsculas e/ou minúsculas
-                    match = re.search(
-                        fr'\b{district}\b', local['name'], re.IGNORECASE)
-
-                    if match:  # se encontrar o nome da companhia
-                        if data.get('title', '') not in jobs:
-                            jobs.append(data.get('title', ''))
-                        csv_jobs.append(dict_csv(data))
-
-        if jobs:
-            print(jobs)
-
-            if export:
-                export_csv(f'{district}_jobs', csv_jobs, list(csv_jobs[1].keys()))
-
-            return jobs
-
-        # se a lista dos jobs estiver vazia
-        print(f'Nenhuma vaga encontrada em {district}')
-        return jobs
-
-    except Exception as e:
-        print(f'Erro: {e}')
-        return e
+    print(jobs)
+    
+    if export:
+        export_csv(f'{district}_jobs', csv_jobs, list(csv_jobs[1].keys()))
+    
+    return jobs
 
 
 @app.command(help="Pesquisar salário de uma vaga de emprego específica")
