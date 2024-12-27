@@ -69,12 +69,10 @@ def request_html(header, path): #busca dados de uma página web
             soup = BeautifulSoup(response.text, "lxml")
             return soup
         else:
-            print(f"Erro {response.status_code} - {response.text}")
-            return None
+            return response.status_code
         
     except requests.exceptions.RequestException as e:
-        print(f"Erro na requisição: {e}")
-        return None
+        return e
 
 
 # retorna uma lista com todos os resultados
