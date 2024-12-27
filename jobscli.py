@@ -174,8 +174,7 @@ def jobs_per_locality(district):
                         fr'\b{district}\b', local['name'], re.IGNORECASE)
 
                     if match:  # se encontrar o nome da companhia
-                        if data.get('title', '') not in jobs:
-                            jobs.append(data.get('title', ''))
+                        jobs.append(data.get('title', ''))
                         csv_jobs.append(dict_csv(data))
 
         if jobs:
@@ -341,6 +340,8 @@ def locality(district: str = typer.Argument('nome do distrito', help='Nome ou ID
     
     if export:
         export_csv(f'{district}_jobs', csv_jobs, list(csv_jobs[1].keys()))
+    
+    return jobs
 
 
 @app.command(help="Pesquisar salário de uma vaga de emprego específica")
