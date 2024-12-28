@@ -6,6 +6,59 @@ import json
 
 app = typer.Typer()
 
+# Lista de skills possiveis
+skills_list = [
+            # Linguagens de Programação
+            "python", "java", "javascript", "c#", "ruby", "php",
+            "swift", "go", "kotlin", "rust", "typescript", "scala",
+            "perl", "c", "c++", "dart",
+
+            # Desenvolvimento Web
+            "html", "css", "react", "angular", "vue.js", "bootstrap",
+            "node.js", "express", "jquery", "sass", "less",
+
+            # Desenvolvimento de Aplicativos
+            "flutter", "react native", "ionic", "xamarin",
+
+            # Banco de Dados
+            "sql", "nosql", "mongodb", "postgresql", "mysql",
+            "sqlite", "oracledb", "redis", "firebase",
+
+            # DevOps e Infraestrutura
+            "docker", "kubernetes", "aws", "azure",
+            "terraform", "ansible", "jenkins", "git", "ci/cd",
+
+            # Ciência de Dados e Machine Learning
+            "data science", "data analyst", "tensorflow",
+            "pytorch", "pandas", "numpy", "r", "matplotlib",
+            "scikit-learn", "keras", "statistics", "ciência de dados",
+            "estatística", "databases", "bases de dados", "machine learning"
+
+            # Metodologias e Ferramentas
+            "agile", "scrum", "kanban", "devops", "github", "bitbucket",
+            "jira", "trello", "confluence",
+
+            # Segurança da Informação
+            "cybersecurity",
+
+            # Outras Skills Relevantes
+            "blockchain", "iot", "ar/vr", "ui/ux", "seo",
+            "api", "development", "graphql", "performance",
+            "analytics projects", "excel",
+
+            # Soft Skills
+            "communication", "comunicação", "teamwork",
+            "adaptability", "leadership", "trabalho em equipa",
+            "espirito critico", "proatividade", "espirito de equipa",
+            "criatividade",
+
+            # Linguas
+            "inglês", "françes", "espanhol", "português", "english",
+
+            # Licenciaturas
+            "engenharia informática", "ciência de dados", "data engineer",
+            "software engineer", "engenharia de software"
+        ]
 
 # Função genérica para encontrar um local
 def findZone(zone):
@@ -362,65 +415,12 @@ def skills(skills: list[str] = typer.Argument(help='Skills que deseja pesquisar,
            end_date: str = typer.Argument('dd-mm-aaaa', help='Data final da pesquisa'),
            export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     try:
-        # Lista de skills possiveis
-        list_skills = [
-            # Linguagens de Programação
-            "python", "java", "javascript", "c#", "ruby", "php",
-            "swift", "go", "kotlin", "rust", "typescript", "scala",
-            "perl", "c", "c++", "dart",
-
-            # Desenvolvimento Web
-            "html", "css", "react", "angular", "vue.js", "bootstrap",
-            "node.js", "express", "jquery", "sass", "less",
-
-            # Desenvolvimento de Aplicativos
-            "flutter", "react native", "ionic", "xamarin",
-
-            # Banco de Dados
-            "sql", "nosql", "mongodb", "postgresql", "mysql",
-            "sqlite", "oracledb", "redis", "firebase",
-
-            # DevOps e Infraestrutura
-            "docker", "kubernetes", "aws", "azure",
-            "terraform", "ansible", "jenkins", "git", "ci/cd",
-
-            # Ciência de Dados e Machine Learning
-            "data science", "data analyst", "tensorflow",
-            "pytorch", "pandas", "numpy", "r", "matplotlib",
-            "scikit-learn", "keras", "statistics", "ciência de dados",
-            "estatística", "databases", "bases de dados",
-
-            # Metodologias e Ferramentas
-            "agile", "scrum", "kanban", "devops", "github", "bitbucket",
-            "jira", "trello", "confluence",
-
-            # Segurança da Informação
-            "cybersecurity",
-
-            # Outras Skills Relevantes
-            "blockchain", "iot", "ar/vr", "ui/ux", "seo",
-            "api", "development", "graphql", "performance",
-            "analytics projects", "excel",
-
-            # Soft Skills
-            "communication", "comunicação", "teamwork",
-            "adaptability", "leadership", "trabalho em equipa",
-            "espirito critico", "proatividade", "espirito de equipa",
-            "criatividade",
-
-            # Linguas
-            "inglês", "françes", "espanhol", "português", "english",
-
-            # Licenciaturas
-            "engenharia informática", "ciência de dados", "data engineer",
-            "software engineer", "engenharia de software"
-        ]
-
+        
         # Tratamento das skills
         skills = re.split(r',', skills[0])
 
         for skill in skills:
-            if skill.lower() not in list_skills:
+            if skill.lower() not in skills_list:
                 return print(f"{skill} não é compatível com uma skill!")
 
         # Tratamento das datas
