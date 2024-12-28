@@ -1,7 +1,6 @@
 from requests import head
 from datasets import *
 from jobscli import *
-from data import skills
 import typer
 import re
 
@@ -129,41 +128,48 @@ def statistics(zone: str = typer.Argument('Nome do distrito')):
 def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'), 
                 export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     try:
+        job = re.sub(r"\s+", "-", job)
+        soup = request_html("https://www.ambitionbox.com/", f"jobs/{job}-jobs-prf")
         
-        soup = request_html("https://www.ambitionbox.com/", f"jobs/search?tag={job}")
+        total_jobs = (soup.find("h1", class_="container jobs-h1 bold-title-l")).text
+        total = re.sub(r"(\d+)([a-zA-Z\s]+)", r"\1", total_jobs)
+        total = re.sub(r",", "", total)
+        pages = round(int(total)/10) + 1
         
-        jobs_info = soup.find_all("div", class_ = "jobsInfoCardCont")
-        
-        list_skill = []
-        
-        #Procurar as skills na descrição de cada vaga 
-        for job_info in jobs_info:
-            url = job_info.find("a", class_= "title noclick")["href"]
-            
-            #Obter as descrições
-            description_job = request_html("https://www.ambitionbox.com/", url)
-            description_job = description_job.find("div", class_= "htmlCont")
-            
-            if description_job is not None:
-                
-                for skill in skills:
-                    print(skill)
-                    count_skill = re.findall(rf"\b{skill}\b", description_job.text.lower())
-                    if len(count_skill) > 0:
-                        
-                        skill_found = False
-                        # Percorre cada dicionário na lista
-                        for skill_dict in list_skill:
-                            if skill_dict["skill"] == skill:
-                                # Se a skill já existe, soma o count
-                                skill_dict["count"] += len(count_skill)
-                                skill_found = True
-                                break
-                            
-                        # Adiciona a skill se não foi encontrada
-                        if not skill_found:
-                            list_skill.append({"skill": skill, "count": len(count_skill)})
+        for page in range(1, 10):
+            print(page)
+            soup = request_html("https://www.ambitionbox.com/", f"jobs/{job}-jobs-prf?page={page}")
 
+            jobs_info = soup.find_all("div", class_ = "jobsInfoCardCont")
+            
+            list_skill = []
+            
+            #Procurar as skills na descrição de cada vaga 
+            for job_info in jobs_info:
+                url = job_info.find("a", class_= "title noclick")["href"]
+                
+                #Obter as descrições
+                description_job = request_html("https://www.ambitionbox.com/", url)
+                description_job = description_job.find("div", class_= "htmlCont")
+                
+                if description_job is not None:
+                    
+                    for skill in skills_list:
+                        count_skill = re.findall(rf"\b{skill}\b", description_job.text.lower())
+                        if len(count_skill) > 0:
+                            
+                            skill_found = False
+                            # Percorre cada dicionário na lista
+                            for skill_dict in list_skill:
+                                if skill_dict["skill"] == skill:
+                                    # Se a skill já existe, soma o count
+                                    skill_dict["count"] += len(count_skill)
+                                    skill_found = True
+                                    break
+                                
+                            # Adiciona a skill se não foi encontrada
+                            if not skill_found:
+                                list_skill.append({"skill": skill, "count": len(count_skill)})
         
         if list_skill:
             
@@ -176,7 +182,7 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
             return list_skill
 
         else:
-            print("Nenhuma empresa encontrada que requer a(s) skill(s).")
+            print("Nenhuma skill encontrada.")
             return None
     
     except Exception as e:
