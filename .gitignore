@@ -4,3 +4,4 @@ README.md
 myenv/*
 __pycache__*
 .idea*
+.vscode/
