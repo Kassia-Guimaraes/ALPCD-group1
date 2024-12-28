@@ -5,19 +5,84 @@ from data import skills
 import typer
 import re
 
+
 app = typer.Typer()
 
 @app.command(help= "Procura o trabalho pelo ID da vaga")
 def fetch_job_details(job_id):
+    # Encontrar a vaga de trabalho através do id da vaga no site do itjobs e com isso utilizar o nome da empresa 
+    # como palavra-chave para responder a segunda parte do trabalho, que visa buscar as informações sobre a empresa
+    # no site do ambitionbox.
     jobData = request_data_by_id("https://api.itjobs.pt/", "job/get.json", job_id) 
-    
-    print("Dados do Job:", jobData["company"]["name"])
+          
     company_name= jobData['company']['name']
-    company_path= company_name.replace(' ', '-')
     
-    #data= request_html('https://www.ambitionbox.com/overview/', f"{company_path}-overview")
-    data= request_html('https://www.ambitionbox.com/overview/', "capgemini-overview")
-    return data
+    tokens = re.split(r'\W+', company_name)
+    company_path= tokens[0].replace(' ', '-')
+            
+    data= request_html('https://www.ambitionbox.com/overview/', f"{company_path}-overview")
+    # após encontrar o caminho no site do ambitionbox para a empresa desejada o código irá verificar se a empresa existe
+    # ou não. Caso exista, o primeiro if irá retornar as informações solicitadas na alínea a: rating geralda empresa 0-5;
+    # Descrição da empresa; Principais benefícios de trabalhar na empresa.
+    # Teve-se em atenção neste código realizar a procura mais genérica possível, pois sabemos que na prática o site pode
+    # vir a mudar algumas informações e com isso o código já não mais funcionaria. 
+       
+    if type(data) is BeautifulSoup:
+        # Find the <script> tag containing the JSON
+        script_tag = data.find('script', string=re.compile("rating"))
+
+        if script_tag:
+            # Extract the text content of the <script> tag
+            script_content = script_tag.string.strip()
+            
+            # Parse the JSON data
+            try:
+                json_data = json.loads(script_content)
+                
+                # Access the 'ratingValue'
+                rating_value = json_data.get('ratingValue', 'Rating value not found')
+            except:
+                print("Error finding rating")
+        
+        description_element = data.find(class_="css-175oi2r mt-5 gap-5")
+        if description_element:
+            # Extract the text content of the <script> tag
+            description_content = description_element.text
+            # Find the index of the phrase
+            index = description_content.find('Managing your company')
+            
+            # If the phrase is found, return the substring before the phrase
+            if index != -1:
+                description = description_content[:index]
+            else:
+                description = description_content
+
+        top_benefits_title_element = data.find(lambda tag: tag.string and 'Top Employees Benefits' in tag.string)
+        top_benefits_parent = top_benefits_title_element.parent.text
+        # Remove numbers
+        top_benefits_parent = re.sub(r'\d+', '|', top_benefits_parent)
+        
+                
+        # Remove the specific phrase
+        top_benefits_parent = top_benefits_parent.replace('View all benefits', '')
+        # Remove the specific phrase
+        top_benefits_parent = top_benefits_parent.replace('Top Employees Benefits', '|')
+        
+        # Remove the specific phrase
+        top_benefits = top_benefits_parent.replace('employees reported', '')
+        
+        
+        #top_benefits = top_benefits.split('|')
+    else:
+        print("Falha ao encontrar conteúdo!")
+    
+    
+    jobData.update({'ambition_box_rating':rating_value})
+    jobData.update({'ambition_box_benefits':top_benefits})
+    jobData.update({'ambition_box_description':description})
+    
+    print(jobData)
+    return jobData
 
 
 @app.command(help= "Quantidade de vagas por zone")
