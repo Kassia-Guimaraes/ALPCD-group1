@@ -190,5 +190,53 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
         return e
 
 
+@app.command(help= "Pesquisa trabalhos por localidade")
+def extra(locality:str = typer.Argument('nome localidade', help='None da localidade'),
+          news: bool = typer.Option(False, "--news", help="Saber quais as vagas mais recentes")):
+
+    try:
+
+        if news:
+            soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp')
+        else:
+            soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?cidade={locality.lower()}')
+
+        total_pages = soup.find('h3', style="font-size:18px;font-weight:100; color:#808080; padding-top: 10px; padding-bottom: 10px;").text
+        total_pages = re.search(r'Pag\.\s*([1-9]+)\s*/\s*([1-9]+)', total_pages) #encontra o total de páginas da web
+
+        if not total_pages:
+            print('Não foi possível encontrar o total de páginas')
+            return None
+
+        total_pages = int(total_pages.group(2))
+        html_jobs = []
+            
+        for page in range(1,2):
+
+            if news:
+                soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?page={page}')
+            else:
+                soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?cidade={locality.lower()}&page={page}')
+
+            html_jobs.append(soup)
+            
+
+        list_jobs = []
+
+        for jobs in html_jobs: 
+            open_jobs = jobs.find_all('div', class_="job-item media")
+            list_jobs.extend(open_jobs) #Guarda o nome das vagas de emprego
+
+        for jobs in list_jobs:
+            job_name = jobs.find('a', class_="oferta-link", style="font-weight:bold")
+        
+        print(list_jobs[1])
+
+
+    except:
+        print(f'Vagas na localidade {locality} não encontradas')
+
+    
+
 if __name__ == "__main__":
     app()
