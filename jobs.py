@@ -185,5 +185,24 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
         return e
 
 
+@app.command(help= "Procura o trabalho pelo ID da vaga, em outro website")
+def fetch_job_details_alternative(job_id: int = typer.Argument(help='ID do trabalho a pesquisar')):
+    try:
+        jobData = request_data_by_id("https://api.itjobs.pt/", "job/get.json", job_id)
+        
+        company_name= jobData['company']['name']
+        
+        soup = request_html("https://ranking-empresas.dinheirovivo.pt/" , f"busqueda-rankings?termino={company_name}")
+        
+        ranking = soup.find("td", class_= "SCTableCell").text
+        print(ranking)
+        
+        jobData["company"]["ranking"] = ranking
+        print(jobData)
+        
+    except Exception as e:
+        print(f'Erro: {e}')
+        return e
+
 if __name__ == "__main__":
     app()
