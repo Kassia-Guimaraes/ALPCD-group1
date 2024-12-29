@@ -85,7 +85,7 @@ def fetch_job_details(job_id):
 
 
 @app.command(help= "Quantidade de vagas por zone")
-def statistics(zone: str = typer.Argument('Nome do distrito')):
+def statistics(zone: str = typer.Argument(help='Nome do distrito')):
     ''' Cria um ficheiro .csv com a contagem de vagas por zona'''
     try:
         jobs, _ = jobs_per_locality(zone)
@@ -191,7 +191,7 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
 
 
 @app.command(help= "Pesquisa trabalhos por localidade")
-def extra(locality:str = typer.Argument('nome localidade', help='None da localidade'),
+def extra(locality:str = typer.Argument(None, help='None da localidade'),
           news: bool = typer.Option(False, "--news", help="Saber quais as vagas mais recentes")):
 
     try:
@@ -211,7 +211,7 @@ def extra(locality:str = typer.Argument('nome localidade', help='None da localid
         total_pages = int(total_pages.group(2))
         html_jobs = []
             
-        for page in range(1,2):
+        for page in range(1,total_pages):
 
             if news:
                 soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?page={page}')
@@ -220,22 +220,50 @@ def extra(locality:str = typer.Argument('nome localidade', help='None da localid
 
             html_jobs.append(soup)
             
-
         list_jobs = []
 
         for jobs in html_jobs: 
-            open_jobs = jobs.find_all('div', class_="job-item media")
-            list_jobs.extend(open_jobs) #Guarda o nome das vagas de emprego
+
+            if news:
+                open_jobs = jobs.find_all('div', class_="job-item job-item-destaque media")
+            else:
+                open_jobs = jobs.find_all('div', class_="job-item media")
+
+            list_jobs.extend(open_jobs) #Guarda o html de cada vaga de emprego
+
+        csv_jobs = []
 
         for jobs in list_jobs:
-            job_name = jobs.find('a', class_="oferta-link", style="font-weight:bold")
-        
-        print(list_jobs[1])
+            date = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[0].text #forma de encontrar a data de publicação da vaga
+            zone = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[1].text #forma de encontrar a localidade do trabalho
+            category = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[2].text #forma de encontrar a categoria de trabalho
+            employer = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[3].text #forma de encontrar a empresa que está a contratar
+            job_name = jobs.find('a', class_="oferta-link", style="font-weight:bold").text
+            
+            dict = {
+                'Posição': job_name,
+                'Categoria': category,
+                'Empresa': employer,
+                'Zona': zone,
+                'Data de publicação': date
+            }
 
+            csv_jobs.append(dict)
+        
+        if csv_jobs:
+            if news:
+                export_csv(f'new_jobs', csv_jobs, list(csv_jobs[1].keys()))
+                print(f'Ficheiro new_jobs exportado com sucesso')
+            else:
+                export_csv(f'{locality}_jobs', csv_jobs, list(csv_jobs[1].keys()))
+                print(f'Ficheiro {locality}_jobs exportado com sucesso')
+
+        else:
+            print('Não foi possível criar um ficheiro')
+            return None            
 
     except:
-        print(f'Vagas na localidade {locality} não encontradas')
-
+        print(f'Vagas não encontradas')
     
 
 if __name__ == "__main__":
