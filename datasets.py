@@ -59,7 +59,9 @@ def request_html(header, path): #busca dados de uma página web
                "Sec-Fetch-Mode": "navigate", 
                "Sec-Fetch-Site": "none", 
                "Sec-Fetch-User": "?1",
-                "Cache-Control": "max-age=0"}
+                "Cache-Control": "max-age=0",
+                "Referer": "https://www.google.com",
+                "Origin": "https://www.example.com"}
     payload = {}
 
     try:

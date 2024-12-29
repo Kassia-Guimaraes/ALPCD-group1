@@ -29,7 +29,7 @@ skills_list = [
             "terraform", "ansible", "jenkins", "git", "ci/cd",
 
             # Ciência de Dados e Machine Learning
-            "data science", "data analyst", "tensorflow",
+            "tensorflow",
             "pytorch", "pandas", "numpy", "r", "matplotlib",
             "scikit-learn", "keras", "statistics", "ciência de dados",
             "estatística", "databases", "bases de dados", "machine learning"
@@ -43,7 +43,7 @@ skills_list = [
 
             # Outras Skills Relevantes
             "blockchain", "iot", "ar/vr", "ui/ux", "seo",
-            "api", "development", "graphql", "performance",
+            "api", "graphql",
             "analytics projects", "excel",
 
             # Soft Skills
@@ -56,6 +56,7 @@ skills_list = [
             "inglês", "françes", "espanhol", "português", "english",
 
             # Licenciaturas
+            "data science", "data analyst",
             "engenharia informática", "ciência de dados", "data engineer",
             "software engineer", "engenharia de software"
         ]
