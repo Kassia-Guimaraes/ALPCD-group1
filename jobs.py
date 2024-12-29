@@ -186,20 +186,48 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
 
 
 @app.command(help= "Procura o trabalho pelo ID da vaga, em outro website")
-def fetch_job_details_alternative(job_id: int = typer.Argument(help='ID do trabalho a pesquisar')):
+def fetch_job_details_alternative(job_id: int = typer.Argument(help='ID do trabalho a pesquisar'),
+                                  export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     try:
+        # Obter os dados da vaga pelo ID
         jobData = request_data_by_id("https://api.itjobs.pt/", "job/get.json", job_id)
+        jobData['company']["address"] = re.sub(r'[\r\n]+', " ", jobData['company']["address"])
         
+        #Obter o nome da empresa 
         company_name= jobData['company']['name']
         
+        #Dados sobre a empresa em "dinheiro vivo"
         soup = request_html("https://ranking-empresas.dinheirovivo.pt/" , f"busqueda-rankings?termino={company_name}")
         
-        ranking = soup.find("td", class_= "SCTableCell").text
-        print(ranking)
+        if type(soup) is BeautifulSoup:
+            
+            #Obter o ranking nacional da empresa
+            ranking = soup.find("td", {"data-label": "Ranking"}).text
+            jobData["company"]["national_ranking"] = ranking
+            
+            #Obter a descrição da empresa
+            url_company = soup.find("td", {"data-label": "Empresa"})
+            url = url_company.find("a")["href"]
+            
+            info_company = request_html("https://ranking-empresas.dinheirovivo.pt/" , url)
+            table_description = info_company.find_all("dd", class_="o-grid__col u-12 u-10@sm")
+            description = table_description[1].text
+            jobData["company"]["dinheiro_vivo_description"] = description
+            
+            #Obter o ranking setorial da empresa
+            ranking_setorial = info_company.find("div", class_="sc-iqzUVk gpihmB").text
+            ranking_setorial = re.search(r'\d+', ranking_setorial)
+            jobData["company"]["setorial_ranking"] = ranking_setorial.group()
+            
+            print(jobData["company"])
+            
+            if export:
+                export_csv('job_details_alternative', [jobData["company"]], list(jobData["company"].keys()))
         
-        jobData["company"]["ranking"] = ranking
-        print(jobData)
-        
+        else:
+            jobData["company"]["ranking"] = "Empresa/Ranking não encontrado"
+            print(jobData["company"])
+            
     except Exception as e:
         print(f'Erro: {e}')
         return e
