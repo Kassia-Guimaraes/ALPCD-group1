@@ -2,7 +2,7 @@ from top_secret import secret
 import requests
 import csv
 from bs4 import BeautifulSoup
-
+import json
 def request_data_by_id(header, path, id): #importa dados da pagina com id especifico
     
     url = f"{header}{path}?api_key={secret}&id={id}"  # search caminho para dados específicos
@@ -13,9 +13,17 @@ def request_data_by_id(header, path, id): #importa dados da pagina com id especi
         response = requests.get(url, headers=headers)
 
         if response.status_code == 200:
-            return response.json()
+             
+            try:
+                response_json = response.json()  # Converte a resposta para JSON
+                return response_json
+            
+            except json.JSONDecodeError as e:
+                print(f"Erro ao tentar decodificar JSON: {e}")
+                return None
         else:
-            print(f"Erro {response.status_code} - {response.text}")
+            print(f"Erro ao obter dados. Status code: {response.status_code}")
+            print("Mensagem de erro:", response.text)
             return None
         
     except requests.exceptions.RequestException as e:

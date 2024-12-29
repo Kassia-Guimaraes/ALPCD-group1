@@ -4,21 +4,22 @@ from jobscli import *
 import typer
 import re
 
-
 app = typer.Typer()
 
 @app.command(help= "Procura o trabalho pelo ID da vaga")
-def fetch_job_details(job_id):
+def fetch_job_details(job_id, export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     # Encontrar a vaga de trabalho através do id da vaga no site do itjobs e com isso utilizar o nome da empresa 
     # como palavra-chave para responder a segunda parte do trabalho, que visa buscar as informações sobre a empresa
     # no site do ambitionbox.
     jobData = request_data_by_id("https://api.itjobs.pt/", "job/get.json", job_id) 
-          
+    jobDataClean = dict_csv(jobData)
+                
     company_name= jobData['company']['name']
     
     tokens = re.split(r'\W+', company_name)
     company_path= tokens[0].replace(' ', '-')
-            
+    
+    
     data= request_html('https://www.ambitionbox.com/overview/', f"{company_path}-overview")
     # após encontrar o caminho no site do ambitionbox para a empresa desejada o código irá verificar se a empresa existe
     # ou não. Caso exista, o primeiro if irá retornar as informações solicitadas na alínea a: rating geralda empresa 0-5;
@@ -41,7 +42,8 @@ def fetch_job_details(job_id):
                 # Access the 'ratingValue'
                 rating_value = json_data.get('ratingValue', 'Rating value not found')
             except:
-                print("Error finding rating")
+                print("Error finding company rating")
+                return
         
         description_element = data.find(class_="css-175oi2r mt-5 gap-5")
         if description_element:
@@ -55,8 +57,13 @@ def fetch_job_details(job_id):
                 description = description_content[:index]
             else:
                 description = description_content
-
+        else:
+            print('Error finding company description')
+            return 
+            
+        
         top_benefits_title_element = data.find(lambda tag: tag.string and 'Top Employees Benefits' in tag.string)
+    
         top_benefits_parent = top_benefits_title_element.parent.text
         # Remove numbers
         top_benefits_parent = re.sub(r'\d+', '|', top_benefits_parent)
@@ -71,17 +78,18 @@ def fetch_job_details(job_id):
         top_benefits = top_benefits_parent.replace('employees reported', '')
         
         
-        #top_benefits = top_benefits.split('|')
     else:
         print("Falha ao encontrar conteúdo!")
     
     
-    jobData.update({'ambition_box_rating':rating_value})
-    jobData.update({'ambition_box_benefits':top_benefits})
-    jobData.update({'ambition_box_description':description})
+    jobDataClean.update({'ambition_box_rating':rating_value})
+    jobDataClean.update({'ambition_box_benefits':top_benefits})
+    jobDataClean.update({'ambition_box_description':description})
     
-    print(jobData)
-    return jobData
+    filename = f"job{job_id}"
+    export_csv(filename, [jobDataClean], list(jobDataClean.keys()))
+    print(jobDataClean)    
+    return jobDataClean
 
 
 @app.command(help= "Quantidade de vagas por zone")
@@ -206,3 +214,4 @@ def fetch_job_details_alternative(job_id: int = typer.Argument(help='ID do traba
 
 if __name__ == "__main__":
     app()
+    
