@@ -65,24 +65,23 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
     try:
         job = re.sub(r"\s+", "-", job)
         soup = request_html("https://www.ambitionbox.com/", f"jobs/{job}-jobs-prf")
+
         
         total_jobs = (soup.find("h1", class_="container jobs-h1 bold-title-l")).text
         total = re.sub(r"(\d+)([a-zA-Z\s]+)", r"\1", total_jobs)
         total = re.sub(r",", "", total)
         pages = round(int(total)/10) + 1
-        
-        for page in range(1, 10):
-            print(page)
+        dict_skill = dict()
+
+        for page in range(1, pages+1):
             soup = request_html("https://www.ambitionbox.com/", f"jobs/{job}-jobs-prf?page={page}")
 
             jobs_info = soup.find_all("div", class_ = "jobsInfoCardCont")
             
-            list_skill = []
-            
             #Procurar as skills na descrição de cada vaga 
             for job_info in jobs_info:
                 url = job_info.find("a", class_= "title noclick")["href"]
-                
+
                 #Obter as descrições
                 description_job = request_html("https://www.ambitionbox.com/", url)
                 description_job = description_job.find("div", class_= "htmlCont")
@@ -92,19 +91,15 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
                     for skill in skills_list:
                         count_skill = re.findall(rf"\b{skill}\b", description_job.text.lower())
                         if len(count_skill) > 0:
-                            
-                            skill_found = False
-                            # Percorre cada dicionário na lista
-                            for skill_dict in list_skill:
-                                if skill_dict["skill"] == skill:
-                                    # Se a skill já existe, soma o count
-                                    skill_dict["count"] += len(count_skill)
-                                    skill_found = True
-                                    break
-                                
+                            if skill in dict_skill:
+                                # Se a skill já existe, soma o count
+                                dict_skill[skill] += len(count_skill)
                             # Adiciona a skill se não foi encontrada
-                            if not skill_found:
-                                list_skill.append({"skill": skill, "count": len(count_skill)})
+                            else:
+                                dict_skill[skill] = len(count_skill)
+                                
+                                
+        list_skill = [{"skill": key, "count": value} for key, value in dict_skill.items()]
         
         if list_skill:
             
