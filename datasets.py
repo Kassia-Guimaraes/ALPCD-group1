@@ -3,6 +3,7 @@ import requests
 import csv
 from bs4 import BeautifulSoup
 import json
+
 def request_data_by_id(header, path, id): #importa dados da pagina com id especifico
     
     url = f"{header}{path}?api_key={secret}&id={id}"  # search caminho para dados específicos
@@ -50,7 +51,6 @@ def request_data(header, path, search, limit, page):  # faz o import dos dados d
         print(f"Erro na requisição: {e}")
         return None
 
-
 def request_html(header, path): #busca dados de uma página web
    
     if path:
@@ -70,7 +70,6 @@ def request_html(header, path): #busca dados de uma página web
                 "Cache-Control": "max-age=0",
                 "Referer": "https://www.google.com",
                 "Origin": "https://www.example.com"}
-    payload = {}
 
     try:
         response = requests.get(url, headers=headers)
@@ -83,7 +82,6 @@ def request_html(header, path): #busca dados de uma página web
         
     except requests.exceptions.RequestException as e:
         return e
-
 
 # retorna uma lista com todos os resultados
 def import_data(header, path, search, limit, total_data):
@@ -107,7 +105,6 @@ def import_data(header, path, search, limit, total_data):
         results += data
 
         rest -= limit  # retira a quantidade do limite das páginas importadas
-
 
 def export_csv(name, dicts, columns_name):
     with open(f"{name}.csv", 'w', newline='', encoding='utf-8') as csvfile:
