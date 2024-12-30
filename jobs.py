@@ -7,7 +7,7 @@ import re
 app = typer.Typer()
 
 @app.command(help= "Procura o trabalho pelo ID da vaga")
-def fetch_job_details(job_id, export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
+def getVacancy(job_id, export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     # Encontrar a vaga de trabalho através do id da vaga no site do itjobs e com isso utilizar o nome da empresa 
     # como palavra-chave para responder a segunda parte do trabalho, que visa buscar as informações sobre a empresa
     # no site do ambitionbox.
@@ -194,7 +194,7 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
 
 
 @app.command(help= "Procura o trabalho pelo ID da vaga, em outro website")
-def fetch_job_details_alternative(job_id: int = typer.Argument(help='ID do trabalho a pesquisar'),
+def get_vacancy_alternative(job_id: int = typer.Argument(help='ID do trabalho a pesquisar'),
                                   export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     try:
         # Obter os dados da vaga pelo ID
@@ -242,7 +242,7 @@ def fetch_job_details_alternative(job_id: int = typer.Argument(help='ID do traba
 
       
 @app.command(help= "Pesquisa trabalhos por localidade")
-def extra(locality:str = typer.Argument(None, help='None da localidade'),
+def netjobs(locality:str = typer.Argument(None, help='None da localidade'),
           news: bool = typer.Option(False, "--news", help="Saber quais as vagas mais recentes")):
 
     try:
@@ -319,4 +319,5 @@ def extra(locality:str = typer.Argument(None, help='None da localidade'),
 
 if __name__ == "__main__":
     app()
+    
     
