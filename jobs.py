@@ -194,7 +194,7 @@ def list_skills(job: str = typer.Argument(help='Trabalho a pesquisar'),
 
 
 @app.command(help= "Procura o trabalho pelo ID da vaga, em outro website")
-def get_vacancy_alternative(job_id: int = typer.Argument(help='ID do trabalho a pesquisar'),
+def getVacancy_alternative(job_id: int = typer.Argument(help='ID do trabalho a pesquisar'),
                                   export: bool = typer.Option(False, "--export", "-e", help="Exportar os resultados para um arquivo CSV")):
     try:
         # Obter os dados da vaga pelo ID
