@@ -242,8 +242,10 @@ def getVacancy_alternative(job_id: int = typer.Argument(help='ID do trabalho a p
 
       
 @app.command(help= "Pesquisa trabalhos por localidade")
-def netjobs(locality:str = typer.Argument(None, help='None da localidade'),
+def netjobs(locality:str = typer.Argument(None, help='Nome da localidade'),
           news: bool = typer.Option(False, "--news", help="Saber quais as vagas mais recentes")):
+    
+    ''' Pesquisa vagas de emprego no site do net-empregos por localidade '''
 
     try:
 
@@ -308,6 +310,88 @@ def netjobs(locality:str = typer.Argument(None, help='None da localidade'),
             else:
                 export_csv(f'{locality}_jobs', csv_jobs, list(csv_jobs[1].keys()))
                 print(f'Ficheiro {locality}_jobs exportado com sucesso')
+
+        else:
+            print('Não foi possível criar um ficheiro')
+            return None            
+
+    except:
+        print(f'Vagas não encontradas')
+        return None
+
+
+@app.command(help= "Pesquisa trabalhos por localidade")
+def keyjobs(key:str = typer.Argument(help='Palavra chave do emprego'),
+            locality = typer.Argument(None, help='Nome da localidade')):
+    
+    ''' Pesquisa vagas de emprego no site do net-empregos por palavra chave'''
+
+    try:
+
+        if locality:
+            soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?chaves={key.lower()}&cidade={locality.lower()}')
+        else:
+            soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?chaves={key.lower()}')
+
+        total_pages = soup.find('h3', style="font-size:18px;font-weight:100; color:#808080; padding-top: 10px; padding-bottom: 10px;").text
+        total_pages = re.search(r'Pag\.\s*([1-9]+)\s*/\s*([1-9]+)', total_pages) #encontra o total de páginas da web
+
+        if total_pages:
+            total_pages = int(total_pages.group(2))
+        else:
+            total_pages=2
+        
+        html_jobs = []
+
+            
+        for page in range(1,total_pages):
+
+            if locality:
+                soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?chaves={key.lower()}&cidade={locality.lower()}&page={page}')
+            else:
+                soup = request_html('https://www.net-empregos.com/',f'pesquisa-empregos.asp?chaves={key.lower()}&page={page}')
+
+            html_jobs.append(soup)
+            
+        list_jobs = []
+
+        for jobs in html_jobs: 
+
+            open_jobs = jobs.find_all('div', class_="job-item media")
+            open_new_jobs = jobs.find_all('div', class_="job-item job-item-destaque media")
+
+            if open_new_jobs:
+                list_jobs.extend(open_new_jobs)
+
+            list_jobs.extend(open_jobs) #Guarda o html de cada vaga de emprego
+
+
+        csv_jobs = []
+
+        for jobs in list_jobs:
+            date = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[0].text #forma de encontrar a data de publicação da vaga
+            zone = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[1].text #forma de encontrar a localidade do trabalho
+            category = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[2].text #forma de encontrar a categoria de trabalho
+            employer = (((jobs.find('div', class_="job-ad-item")).find('ul')).find_all('li'))[3].text #forma de encontrar a empresa que está a contratar
+            job_name = jobs.find('a', class_="oferta-link", style="font-weight:bold").text
+            
+            dict = {
+                'Posição': job_name,
+                'Categoria': category,
+                'Empresa': employer,
+                'Zona': zone,
+                'Data de publicação': date
+            }
+
+            csv_jobs.append(dict)
+        
+        if csv_jobs:
+            if locality:
+                export_csv(f'{key}_{locality}', csv_jobs, list(csv_jobs[1].keys()))
+                print(f'Ficheiro {key}_{locality} exportado com sucesso')
+            else:
+                export_csv(f'{key}_jobs', csv_jobs, list(csv_jobs[1].keys()))
+                print(f'Ficheiro {key}_jobs exportado com sucesso')
 
         else:
             print('Não foi possível criar um ficheiro')
