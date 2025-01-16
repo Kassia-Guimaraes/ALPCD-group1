@@ -29,21 +29,11 @@ def getVacancy(job_id, export: bool = typer.Option(False, "--export", "-e", help
        
     if type(data) is BeautifulSoup:
         # Find the <script> tag containing the JSON
-        script_tag = data.find('script', string=re.compile("rating"))
+        script_tag = data.find('span', class_= 'css-1jxf684 text-primary-text font-pn-700 text-[32px] leading-[32px]').text
 
-        if script_tag:
-            # Extract the text content of the <script> tag
-            script_content = script_tag.string.strip()
-            
-            # Parse the JSON data
-            try:
-                json_data = json.loads(script_content)
-                
-                # Access the 'ratingValue'
-                rating_value = json_data.get('ratingValue', 'Rating value not found')
-            except:
-                print("Error finding company rating")
-                return
+        if not script_tag:
+            print("Error finding company rating")
+            return
         
         description_element = data.find(class_="css-175oi2r mt-5 gap-5")
         if description_element:
@@ -82,12 +72,13 @@ def getVacancy(job_id, export: bool = typer.Option(False, "--export", "-e", help
         print("Falha ao encontrar conteúdo!")
     
     
-    jobDataClean.update({'ambition_box_rating':rating_value})
+    jobDataClean.update({'ambition_box_rating':script_tag})
     jobDataClean.update({'ambition_box_benefits':top_benefits})
     jobDataClean.update({'ambition_box_description':description})
     
     filename = f"job{job_id}"
-    export_csv(filename, [jobDataClean], list(jobDataClean.keys()))
+    if export:
+        export_csv(filename, [jobDataClean], list(jobDataClean.keys()))
     print(jobDataClean)    
     return jobDataClean
 
